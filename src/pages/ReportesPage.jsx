@@ -10,23 +10,29 @@ const ReportesPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [selectedSale, setSelectedSale] = useState(null);
-  const [selectedDate, setSelectedDate] = useState(''); // <-- 1. Estado para la fecha
+  const [selectedDate, setSelectedDate] = useState('');
 
-  // --- 2. useEffect MODIFICADO ---
-  // Ahora depende de 'selectedDate'. Se ejecutará cada vez que la fecha cambie.
   useEffect(() => {
-    setIsLoading(true); // Mostramos el indicador de carga al cambiar de fecha
-    // Pasamos la fecha seleccionada a nuestro servicio
+    setIsLoading(true);
     const unsubscribe = getSalesRealtime((fetchedSales) => {
       setSales(fetchedSales);
       setIsLoading(false);
-    }, selectedDate); // <-- Pasamos la fecha
+    }, selectedDate);
 
     return () => unsubscribe();
-  }, [selectedDate]); // <-- El efecto se reactiva si 'selectedDate' cambia
+  }, [selectedDate]);
 
-  const handleShowDetails = (sale) => { /* ... (sin cambios) */ };
-  const handleCloseDetailsModal = () => { /* ... (sin cambios) */ };
+  // --- LÓGICA RESTAURADA ---
+  const handleShowDetails = (sale) => {
+    setSelectedSale(sale);
+    setIsDetailsModalOpen(true);
+  };
+
+  const handleCloseDetailsModal = () => {
+    setIsDetailsModalOpen(false);
+    setSelectedSale(null); // Limpiamos el estado al cerrar
+  };
+  // -------------------------
 
   return (
     <div className="reports-page">
@@ -34,7 +40,6 @@ const ReportesPage = () => {
         <h1>Historial de Ventas</h1>
       </header>
       
-      {/* --- 3. NUEVA SECCIÓN DE FILTRO DE FECHA --- */}
       <div className="filters-container-reports">
         <div className="date-filter">
           <label htmlFor="sale-date">Filtrar por fecha:</label>
@@ -57,6 +62,7 @@ const ReportesPage = () => {
       {isLoading ? (
         <p>Cargando historial de ventas...</p>
       ) : (
+        // La prop 'onShowDetails' ya estaba siendo pasada, ahora la función a la que apunta tiene lógica.
         <SalesTable sales={sales} onShowDetails={handleShowDetails} />
       )}
 
