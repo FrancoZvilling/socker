@@ -1,0 +1,59 @@
+/* src/components/common/Button.css */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: none;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+}
+
+.btn:active {
+  transform: scale(0.98);
+}
+
+.btn-icon {
+  display: flex;
+  margin-right: 8px;
+}
+
+/* Estilo para el botón primario (el más importante) */
+.btn.primary {
+  background-color: #3182ce; /* Un azul atractivo */
+  color: white;
+}
+
+.btn.primary:hover {
+  background-color: #2b6cb0;
+}
+
+.btn.primary:hover {
+  background-color: #2b6cb0;
+}
+
+/* --- ESTOS SON LOS NUEVOS ESTILOS --- */
+/* Estilos que se aplican a CUALQUIER botón cuando está deshabilitado */
+.btn:disabled {
+  background-color: #cbd5e0; /* Un gris claro y neutro */
+  cursor: not-allowed;      /* El cursor cambia para indicar que no se puede hacer clic */
+  transform: none;          /* Evitamos que el botón se "hunda" al hacerle clic */
+}
+
+/* Opcional pero recomendado: Asegurarnos de que el color no cambie al pasar el mouse */
+.btn:disabled:hover {
+  background-color: #cbd5e0;
+}
+
+.btn.secondary {
+  background-color: #e2e8f0;
+  color: #2d3748;
+  border: 1px solid #cbd5e0;
+}
+
+.btn.secondary:hover {
+  background-color: #cbd5e0;
+}

@@ -1,0 +1,28 @@
+/* src/components/inventario/ProductHistoryModal.css */
+.history-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+.history-table th, .history-table td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.history-table th {
+  background-color: #f8f9fa;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+}
+
+.history-table .positive {
+  color: #2f855a; /* Verde */
+  font-weight: bold;
+}
+
+.history-table .negative {
+  color: #c53030; /* Rojo */
+  font-weight: bold;
+}

@@ -1,0 +1,53 @@
+/* src/components/reportes/SaleDetailsModal.css */
+.sale-details-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.sale-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  color: #4a5568;
+  background-color: #f8f9fa;
+  padding: 10px;
+  border-radius: 6px;
+}
+
+.details-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.details-table th, .details-table td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.details-table th {
+  background-color: #f8f9fa;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+}
+
+.details-table td:nth-child(2), /* Cantidad */
+.details-table td:nth-child(3), /* Precio Unit. */
+.details-table td:nth-child(4) { /* Subtotal */
+  text-align: right;
+}
+
+.sale-total-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 20px;
+  margin-top: 20px;
+  font-size: 1.4rem;
+  font-weight: bold;
+}
+
+.sale-total-footer span:last-child {
+  color: #2f855a; /* Un verde para el total */
+}

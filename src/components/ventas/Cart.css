@@ -1,0 +1,55 @@
+/* src/components/ventas/Cart.css */
+.cart-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.cart-header {
+  padding: 20px;
+  border-bottom: 1px solid #e2e8f0;
+}
+.cart-header h3 { margin: 0; }
+
+.cart-items {
+  flex-grow: 1;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.empty-cart-message {
+  color: #718096;
+  text-align: center;
+  margin-top: 40px;
+}
+
+.cart-footer {
+  padding: 20px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.total-section {
+  display: flex;
+  justify-content: space-between;
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 20px;
+}
+
+/* Hacemos que el botón de cobrar ocupe todo el ancho */
+.cart-footer .btn {
+  width: 100%;
+  padding: 15px;
+  font-size: 1.2rem;
+}
+
+.cart-actions {
+  display: flex;
+  gap: 10px; /* Espacio entre los botones */
+}
+
+.cart-actions .btn {
+  flex-grow: 1; /* Hacemos que ambos botones compartan el espacio */
+  padding: 15px;
+  font-size: 1.1rem;
+}

@@ -1,0 +1,55 @@
+/* src/pages/ReportesPage.css */
+.reports-page .page-header {
+  margin-bottom: 30px;
+}
+.reports-page .page-header h1 {
+  font-size: 1.8rem;
+  font-weight: 700;
+}
+
+.filters-container-reports {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+  background-color: #ffffff;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.date-filter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.date-filter label {
+  font-weight: 600;
+  color: #4a5568;
+}
+
+.date-filter input[type="date"] {
+  padding: 8px;
+  border: 1px solid #cbd5e0;
+  border-radius: 6px;
+  font-size: 1rem;
+}
+
+.clear-filter-btn {
+  padding: 8px 16px;
+  border: 1px solid #cbd5e0;
+  background-color: #f7fafc;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.clear-filter-btn:hover:not(:disabled) {
+  background-color: #e2e8f0;
+}
+
+.clear-filter-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

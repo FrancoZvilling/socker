@@ -1,0 +1,12 @@
+.main-layout {
+      display: flex;
+    }
+
+    .main-content {
+      /* Dejamos un espacio a la izquierda para el sidebar */
+      margin-left: 250px;
+      padding: 50px;
+      width: 100%;
+      background-color: #f7fafc; /* Un fondo gris claro para el contenido */
+      min-height: 100vh;
+    }

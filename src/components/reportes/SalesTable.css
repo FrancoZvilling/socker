@@ -1,0 +1,47 @@
+/* src/components/reportes/SalesTable.css */
+.table-container {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    overflow: hidden;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    padding: 16px;
+    text-align: left;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+thead {
+    background-color: #f8f9fa;
+}
+
+th {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    color: #4a5568;
+    font-weight: 600;
+}
+
+tbody tr:hover {
+    background-color: #f7fafc;
+}
+
+.icon-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #4a5568;
+    font-size: 1.2rem;
+    padding: 5px;
+    border-radius: 50%;
+    display: flex;
+}
+.icon-button:hover {
+    background-color: #e2e8f0;
+}

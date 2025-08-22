@@ -1,0 +1,66 @@
+/* src/components/clientes/ClientHistoryModal.css */
+.account-summary {
+  background-color: #f7fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 25px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.balance-display {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.balance-display span:first-child {
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: #4a5568;
+}
+
+.balance-amount {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1a202c; /* Color por defecto (neutro) para saldo 0 */
+}
+
+.balance-amount.debt {
+  color: #c53030; /* Rojo para deuda */
+}
+
+.balance-amount.credit {
+  color: #2f855a; /* Verde para crédito a favor */
+}
+
+.payment-form {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+}
+
+/* Hacemos que el input ocupe el espacio disponible */
+.payment-form .input-group {
+  flex-grow: 1;
+  margin-bottom: 0;
+}
+
+.history-title {
+  margin-bottom: 15px;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 5px;
+  font-size: 1.2rem;
+}
+
+/* Estilos para el estado del pago en la tabla */
+.status-pending {
+  color: #dd6b20; /* Naranja */
+  font-weight: bold;
+}
+.status-paid {
+  color: #38a169; /* Verde */
+  font-weight: bold;
+}

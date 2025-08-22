@@ -1,0 +1,98 @@
+.table-container {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  overflow: hidden; /* Para que el borde redondeado se aplique a la tabla */
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse; /* Une los bordes de las celdas */
+}
+
+th, td {
+  padding: 16px;
+  text-align: left;
+  border-bottom: 1px solid #e2e8f0; /* Línea divisoria sutil */
+}
+
+thead {
+  background-color: #f8f9fa;
+}
+
+th {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  color: #4a5568;
+  font-weight: 600;
+}
+
+tbody tr:hover {
+  background-color: #f7fafc;
+}
+
+.actions-cell {
+  display: flex;
+  gap: 10px;
+}
+
+.icon-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #4a5568;
+  font-size: 1.2rem;
+  padding: 5px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+}
+
+.icon-button:hover {
+  background-color: #e2e8f0;
+}
+
+.icon-button.danger:hover {
+  color: #e53e3e;
+  background-color: #fed7d7;
+}
+
+.stock-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.8rem;
+  color: white;
+  gap: 6px; /* Espacio entre el ícono y el texto */
+}
+
+.stock-badge.in-stock { background-color: #38a169; } /* Verde */
+.stock-badge.low-stock { background-color: #dd6b20; } /* Naranja */
+.stock-badge.out-of-stock { background-color: #e53e3e; } /* Rojo */
+
+.stock-badge .alert-icon {
+  font-size: 0.9rem;
+}
+
+/* --- NUEVOS ESTILOS PARA LAS FILAS DESTACADAS --- */
+.row-low-stock {
+  /* Un fondo amarillo muy sutil para alertar */
+  background-color: #feebc8 !important; 
+}
+
+.row-out-of-stock {
+  /* Un fondo rojo muy sutil para peligro */
+  background-color: #fed7d7 !important;
+}
+
+/* Hacemos que el hover sea más oscuro para las filas alertadas */
+.row-low-stock:hover, .row-out-of-stock:hover {
+  background-color: #fbd38d !important;
+}
+.row-out-of-stock:hover {
+  background-color: #feb2b2 !important;
+}

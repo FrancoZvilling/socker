@@ -1,0 +1,10 @@
+/* src/components/ventas/ProductGrid.css */
+.product-grid {
+  display: grid;
+  /* Crea columnas que se ajustan al espacio disponible */
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 15px;
+  overflow-y: auto; /* Permite scroll si hay muchos productos */
+  padding: 5px; /* Pequeño padding para que el scroll no pegue al borde */
+  flex-grow: 1; /* Ocupa el espacio vertical disponible */
+}

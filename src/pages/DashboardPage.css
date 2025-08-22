@@ -1,0 +1,14 @@
+/* src/pages/DashboardPage.css */
+.dashboard-page .page-header {
+  margin-bottom: 30px;
+}
+.dashboard-page .page-header h1 {
+  font-size: 1.8rem;
+  font-weight: 700;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 30px;
+}

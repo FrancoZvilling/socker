@@ -1,0 +1,84 @@
+/* src/pages/VentasPage.css */
+.pos-page {
+  display: flex;
+  gap: 40px;
+  height: calc(100vh - 80px); /* Ocupa toda la altura menos el padding del layout */
+}
+
+.catalog-column {
+  flex: 1; /* Ocupa todo el espacio disponible */
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.cart-column {
+  width: 380px; /* Ancho fijo para el carrito */
+  background-color: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 40px; /* La misma distancia que el padding del layout principal */
+  align-self: flex-start; /* Importante para que 'sticky' funcione bien en un contenedor flex */
+  height: calc(100vh - 120px);
+}
+
+.search-input-pos {
+  width: 100%;
+  padding: 15px;
+  font-size: 1.1rem;
+  border: 1px solid #cbd5e0;
+  border-radius: 8px;
+}
+.search-input-pos:focus {
+  outline: none;
+  border-color: #3182ce;
+  box-shadow: 0 0 0 2px #a0c4e8;
+}
+
+.client-selector {
+  padding: 15px 20px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.select-client-btn {
+  width: 100%;
+  padding: 10px;
+  background-color: #ebf8ff;
+  border: 1px dashed #90cdf4;
+  border-radius: 8px;
+  color: #3182ce;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.select-client-btn:hover {
+  background-color: #bee3f8;
+}
+
+.client-selected {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+}
+
+.client-selected strong {
+  color: #2d3748;
+}
+
+.client-selected button {
+  background: none;
+  border: none;
+  color: #c53030;
+  cursor: pointer;
+  text-decoration: underline;
+  font-size: 0.8rem;
+}

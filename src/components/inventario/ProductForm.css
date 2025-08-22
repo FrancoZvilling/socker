@@ -1,0 +1,12 @@
+/* src/components/inventario/ProductForm.css */
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.form-actions {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end; /* Alinea el botón a la derecha */
+}

@@ -1,0 +1,49 @@
+.sidebar {
+      width: 250px;
+      background-color: #1a202c; /* Un color oscuro para empezar */
+      color: white;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+      position: fixed; /* Fijo en la pantalla */
+      top: 0;
+      left: 0;
+    }
+
+    .sidebar-header {
+      margin-bottom: 30px;
+    }
+
+    .sidebar-header h3 {
+      text-align: center;
+      font-size: 1.5rem;
+    }
+
+    .sidebar-nav a {
+      display: flex;
+      align-items: center;
+      color: #a0aec0;
+      text-decoration: none;
+      padding: 12px 15px;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      font-size: 1rem;
+      transition: background-color 0.2s, color 0.2s;
+    }
+
+    .sidebar-nav a:hover {
+      background-color: #2d3748;
+      color: white;
+    }
+
+    .sidebar-nav a.active {
+      background-color: #4a5568; /* Color para el enlace activo */
+      color: white;
+      font-weight: bold;
+    }
+
+    .sidebar-nav a svg {
+      margin-right: 15px;
+      font-size: 1.2rem;
+    }
