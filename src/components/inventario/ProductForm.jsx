@@ -1,6 +1,7 @@
 // src/components/inventario/ProductForm.jsx
 
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import { addProduct, updateProduct, createMovement } from '../../services/productService';
 import { getSuppliersRealtime } from '../../services/supplierService';
 import Input from '../common/Input';
@@ -9,7 +10,9 @@ import { toast } from 'react-hot-toast';
 import './ProductForm.css';
 
 const ProductForm = ({ onFormSubmit, initialData }) => {
-  // Estado inicial del formulario con los nuevos campos
+  const { userData } = useAuth(); // <-- CAMBIO
+  const tenantId = userData?.tenantId;
+
   const [formData, setFormData] = useState({
     name: '',
     sku: '',
@@ -17,38 +20,33 @@ const ProductForm = ({ onFormSubmit, initialData }) => {
     stock: '',
     minStock: '',
     price: '',
-    costPrice: '', // Nuevo campo para Precio de Costo
-    supplierId: '', // Nuevo campo para el ID del Proveedor
+    costPrice: '',
+    supplierId: '',
   });
   
-  // Nuevo estado para almacenar la lista de proveedores
   const [suppliers, setSuppliers] = useState([]);
 
-  // useEffect para obtener la lista de proveedores al cargar el componente
   useEffect(() => {
-    const unsubscribe = getSuppliersRealtime(setSuppliers);
-    return () => unsubscribe(); // Limpieza al desmontar
-  }, []);
+    if (!tenantId) return;
+    const unsubscribe = getSuppliersRealtime(tenantId, setSuppliers);
+    return () => unsubscribe();
+  }, [tenantId]);
 
-  // useEffect para llenar el formulario si estamos editando un producto
   useEffect(() => {
     if (initialData) {
-      // Si estamos editando, llenamos el formulario con los datos existentes
       setFormData({
         ...initialData,
         minStock: initialData.minStock || '',
         costPrice: initialData.costPrice || '',
-
         supplierId: initialData.supplierId || '',
       });
     } else {
-      // Si estamos creando, nos aseguramos de que el formulario esté vacío
       setFormData({
         name: '', sku: '', category: '', stock: '', minStock: '',
         price: '', costPrice: '', supplierId: '',
       });
     }
-  }, [initialData]); // Se ejecuta cada vez que 'initialData' cambia
+  }, [initialData]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -57,11 +55,12 @@ const ProductForm = ({ onFormSubmit, initialData }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (!tenantId) {
+      toast.error("Error: No se ha identificado el negocio. Recargue la página.");
+      return;
+    }
     
-    // Buscamos el proveedor seleccionado para guardar su nombre
     const selectedSupplier = suppliers.find(s => s.id === formData.supplierId);
-
-    // Creamos el objeto con todos los datos del producto, incluyendo los nuevos
     const productData = {
       name: formData.name,
       sku: formData.sku,
@@ -71,14 +70,12 @@ const ProductForm = ({ onFormSubmit, initialData }) => {
       price: Number(formData.price),
       costPrice: Number(formData.costPrice),
       supplierId: formData.supplierId,
-      supplierName: selectedSupplier ? selectedSupplier.name : 'N/A', // Denormalización
+      supplierName: selectedSupplier ? selectedSupplier.name : 'N/A',
     };
 
     let promise;
-
     if (initialData) {
-      // Lógica de actualización (incluye la creación de movimiento de ajuste)
-      promise = updateProduct(initialData.id, productData);
+      promise = updateProduct(tenantId, initialData.id, productData);
       if (Number(initialData.stock) !== productData.stock) {
         const quantityChange = productData.stock - Number(initialData.stock);
         const movementData = {
@@ -90,7 +87,7 @@ const ProductForm = ({ onFormSubmit, initialData }) => {
           newStock: productData.stock,
           timestamp: new Date(),
         };
-        createMovement(movementData);
+        createMovement(tenantId, movementData);
       }
       toast.promise(promise, {
         loading: 'Actualizando producto...',
@@ -98,8 +95,7 @@ const ProductForm = ({ onFormSubmit, initialData }) => {
         error: <b>No se pudo actualizar.</b>,
       });
     } else {
-      // Lógica de creación
-      promise = addProduct({ ...productData, createdAt: new Date() });
+      promise = addProduct(tenantId, { ...productData, createdAt: new Date() });
       toast.promise(promise, {
         loading: 'Guardando producto...',
         success: <b>¡Producto guardado!</b>,
@@ -118,20 +114,12 @@ const ProductForm = ({ onFormSubmit, initialData }) => {
       <Input label="SKU / Código" name="sku" value={formData.sku} onChange={handleChange} />
       <Input label="Categoría" name="category" value={formData.category} onChange={handleChange} />
 
-      {/* Menú desplegable para seleccionar el proveedor */}
       <div className="input-group">
         <label htmlFor="supplierId">Proveedor</label>
-        <select
-          id="supplierId"
-          name="supplierId"
-          value={formData.supplierId}
-          onChange={handleChange}
-        >
+        <select id="supplierId" name="supplierId" value={formData.supplierId} onChange={handleChange}>
           <option value="">Seleccione un proveedor</option>
           {suppliers.map(supplier => (
-            <option key={supplier.id} value={supplier.id}>
-              {supplier.name}
-            </option>
+            <option key={supplier.id} value={supplier.id}>{supplier.name}</option>
           ))}
         </select>
       </div>
@@ -141,7 +129,6 @@ const ProductForm = ({ onFormSubmit, initialData }) => {
         <Input label="Stock Mínimo" name="minStock" type="number" value={formData.minStock} onChange={handleChange} />
       </div>
 
-      {/* Fila para los precios de costo y venta */}
       <div className="form-row">
         <Input label="Precio de Costo" name="costPrice" type="number" value={formData.costPrice} onChange={handleChange} placeholder="Ej: 10.50" />
         <Input label="Precio de Venta" name="price" type="number" value={formData.price} onChange={handleChange} placeholder="Ej: 15.50" />

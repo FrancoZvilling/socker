@@ -13,17 +13,22 @@ import {
   serverTimestamp
 } from 'firebase/firestore';
 
-const clientsCollectionRef = collection(db, 'clients');
-const paymentsCollectionRef = collection(db, 'payments');
+// --- CAMBIO 1: Funciones auxiliares para obtener las referencias a las subcolecciones ---
+// En lugar de una referencia fija, estas funciones construyen la ruta dinámicamente con el tenantId.
+const getClientsCollectionRef = (tenantId) => collection(db, 'tenants', tenantId, 'clients');
+const getPaymentsCollectionRef = (tenantId) => collection(db, 'tenants', tenantId, 'payments');
+
+
+// --- CAMBIO 2: Todas las funciones exportadas ahora reciben 'tenantId' como primer parámetro ---
 
 // CREATE: Añadir un nuevo cliente
-export const addClient = (clientData) => {
-  return addDoc(clientsCollectionRef, { ...clientData, balance: 0, createdAt: new Date() });
+export const addClient = (tenantId, clientData) => {
+  return addDoc(getClientsCollectionRef(tenantId), { ...clientData, balance: 0, createdAt: new Date() });
 };
 
 // READ: Obtener todos los clientes en tiempo real
-export const getClientsRealtime = (callback) => {
-  const q = query(clientsCollectionRef, orderBy('name')); // Ordenados por nombre
+export const getClientsRealtime = (tenantId, callback) => {
+  const q = query(getClientsCollectionRef(tenantId), orderBy('name')); // Ordenados por nombre
   const unsubscribe = onSnapshot(q, (snapshot) => {
     const clients = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     callback(clients);
@@ -32,51 +37,46 @@ export const getClientsRealtime = (callback) => {
 };
 
 // UPDATE: Actualizar un cliente existente
-export const updateClient = (id, clientData) => {
-  const clientDoc = doc(db, 'clients', id);
+export const updateClient = (tenantId, id, clientData) => {
+  const clientDoc = doc(db, 'tenants', tenantId, 'clients', id);
   return updateDoc(clientDoc, clientData);
 };
 
 // DELETE: Eliminar un cliente
-export const deleteClient = (id) => {
-  const clientDoc = doc(db, 'clients', id);
+export const deleteClient = (tenantId, id) => {
+  const clientDoc = doc(db, 'tenants', tenantId, 'clients', id);
   return deleteDoc(clientDoc);
 };
 
-// --- 4. NUEVA FUNCIÓN PARA REGISTRAR UN PAGO ---
-export const registerClientPayment = async (clientId, paymentAmount) => {
-  // Obtenemos la referencia al documento del cliente
-  const clientRef = doc(db, 'clients', clientId);
+// Función para registrar un pago
+export const registerClientPayment = async (tenantId, clientId, paymentAmount) => {
+  // Obtenemos la referencia al documento del cliente dentro de su tenant
+  const clientRef = doc(db, 'tenants', tenantId, 'clients', clientId);
 
-  // runTransaction nos da una "foto" segura del estado actual
   await runTransaction(db, async (transaction) => {
-    // Primero, leemos el estado actual del cliente DENTRO de la transacción
     const clientDoc = await transaction.get(clientRef);
     if (!clientDoc.exists()) {
       throw "¡El cliente no existe!";
     }
 
-    // Calculamos el nuevo saldo
     const currentBalance = clientDoc.data().balance || 0;
     const newBalance = currentBalance - paymentAmount;
 
-    // A continuación, preparamos las escrituras
-    
     // 1. Actualizamos el saldo del cliente
     transaction.update(clientRef, { balance: newBalance });
 
-    // 2. Creamos un registro del pago en la colección 'payments'
+    // 2. Creamos un registro del pago en la colección 'payments' del tenant
     const paymentRecord = {
       clientId: clientId,
-      clientName: clientDoc.data().name, // Guardamos el nombre para facilitar reportes
+      clientName: clientDoc.data().name,
       amount: paymentAmount,
       previousBalance: currentBalance,
       newBalance: newBalance,
       timestamp: serverTimestamp(),
     };
     
-    // Creamos una referencia para el nuevo documento de pago
-    const newPaymentRef = doc(paymentsCollectionRef);
+    // Creamos una referencia para el nuevo documento de pago dentro de la subcolección del tenant
+    const newPaymentRef = doc(getPaymentsCollectionRef(tenantId));
     transaction.set(newPaymentRef, paymentRecord);
   });
 };

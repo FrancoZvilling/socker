@@ -1,0 +1,21 @@
+/* src/components/auth/AuthModal.css */
+.auth-modal-content {
+  padding-top: 10px;
+}
+
+.auth-modal-switch {
+  margin-top: 25px;
+  text-align: center;
+  font-size: 0.9rem;
+  color: #718096;
+}
+
+.auth-modal-switch button {
+  background: none;
+  border: none;
+  color: #3182ce;
+  font-weight: 600;
+  cursor: pointer;
+  margin-left: 5px;
+  padding: 0;
+}

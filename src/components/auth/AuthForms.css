@@ -1,0 +1,30 @@
+/* src/components/auth/AuthForms.css */
+
+.auth-form .input-group {
+  margin-bottom: 20px;
+}
+
+.auth-form .btn {
+  width: 100%;
+  margin-top: 10px; /* Un poco de espacio extra arriba del botón */
+}
+
+/* --- ESTAS SON LAS LÍNEAS NUEVAS Y CLAVE --- */
+.forgot-password {
+  text-align: center; /* Alinea el enlace a la derecha */
+  margin-bottom: 20px; /* Añade el espacio que necesitas debajo */
+  font-size: 0.85rem;
+}
+
+.forgot-password button {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #718096;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.forgot-password button:hover {
+  color: #3182ce;
+}

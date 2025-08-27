@@ -8,14 +8,17 @@ import {
   serverTimestamp
 } from 'firebase/firestore';
 
-const productsCollectionRef = collection(db, 'products');
-const movementsCollectionRef = collection(db, 'movements');
-const purchasesCollectionRef = collection(db, 'purchases');
+// --- CAMBIO: Funciones de ayuda para apuntar a las subcolecciones del tenant ---
+const getProductsCollectionRef = (tenantId) => collection(db, 'tenants', tenantId, 'products');
+const getMovementsCollectionRef = (tenantId) => collection(db, 'tenants', tenantId, 'movements');
+const getPurchasesCollectionRef = (tenantId) => collection(db, 'tenants', tenantId, 'purchases');
+// --------------------------------------------------------------------------
 
-export const registerPurchase = async (purchaseData) => {
+// --- CAMBIO: La función ahora recibe 'tenantId' como primer argumento ---
+export const registerPurchase = async (tenantId, purchaseData) => {
   const batch = writeBatch(db);
 
-  // 1. Crea un registro de la compra en la colección 'purchases'.
+  // 1. Prepara el registro de la compra (la lógica interna no cambia)
   const purchaseRecord = {
     supplierId: purchaseData.supplierId,
     supplierName: purchaseData.supplierName,
@@ -23,35 +26,36 @@ export const registerPurchase = async (purchaseData) => {
     totalCost: purchaseData.totalCost,
     createdAt: serverTimestamp(),
   };
-  // Lo añadimos fuera del lote para poder obtener su ID si fuera necesario.
-  await addDoc(purchasesCollectionRef, purchaseRecord);
+  
+  // --- CAMBIO: Usamos la nueva función de ayuda para apuntar a la subcolección correcta ---
+  const newPurchaseRef = doc(getPurchasesCollectionRef(tenantId));
+  batch.set(newPurchaseRef, purchaseRecord);
+  // --------------------------------------------------------------------------------------
 
   // 2. Itera sobre cada producto de la compra para actualizar stock y crear movimientos.
   for (const item of purchaseData.items) {
-    const productRef = doc(productsCollectionRef, item.productId);
+    // --- CAMBIO: Usamos la nueva función de ayuda para apuntar a la subcolección correcta ---
+    const productRef = doc(getProductsCollectionRef(tenantId), item.productId);
     
-    // Calculamos el nuevo stock sumando la cantidad recibida
     const newStock = item.currentStock + item.quantity;
 
-    // Añadimos la operación de ACTUALIZAR PRODUCTO al lote.
-    // Actualizamos tanto el stock como el último precio de costo.
     batch.update(productRef, { 
       stock: newStock,
       costPrice: item.costPrice 
     });
 
-    // Creamos el registro de movimiento para el historial
     const movementData = {
       productId: item.productId,
       productName: item.productName,
       type: 'Compra',
-      quantityChange: +item.quantity, // Positivo porque es una entrada
+      quantityChange: +item.quantity,
       previousStock: item.currentStock,
       newStock: newStock,
       timestamp: serverTimestamp(),
     };
     
-    const newMovementRef = doc(movementsCollectionRef);
+    // --- CAMBIO: Usamos la nueva función de ayuda para apuntar a la subcolección correcta ---
+    const newMovementRef = doc(getMovementsCollectionRef(tenantId));
     batch.set(newMovementRef, movementData);
   }
 

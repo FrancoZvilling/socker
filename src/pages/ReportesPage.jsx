@@ -1,11 +1,16 @@
 // src/pages/ReportesPage.jsx
+
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
 import { getSalesRealtime } from '../services/saleService';
 import SalesTable from '../components/reportes/SalesTable';
 import SaleDetailsModal from '../components/reportes/SaleDetailsModal';
 import './ReportesPage.css';
 
 const ReportesPage = () => {
+  const { userData } = useAuth(); // <-- CAMBIO
+  const tenantId = userData?.tenantId;
+
   const [sales, setSales] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
@@ -13,16 +18,18 @@ const ReportesPage = () => {
   const [selectedDate, setSelectedDate] = useState('');
 
   useEffect(() => {
+    if (!tenantId) return; // No hacer nada si no hay tenantId
+
     setIsLoading(true);
-    const unsubscribe = getSalesRealtime((fetchedSales) => {
+    // --- 3. Pasa el tenantId a la llamada del servicio ---
+    const unsubscribe = getSalesRealtime(tenantId, (fetchedSales) => {
       setSales(fetchedSales);
       setIsLoading(false);
     }, selectedDate);
 
     return () => unsubscribe();
-  }, [selectedDate]);
+  }, [selectedDate, tenantId]); // <-- 4. El efecto ahora depende también de tenantId
 
-  // --- LÓGICA RESTAURADA ---
   const handleShowDetails = (sale) => {
     setSelectedSale(sale);
     setIsDetailsModalOpen(true);
@@ -30,9 +37,8 @@ const ReportesPage = () => {
 
   const handleCloseDetailsModal = () => {
     setIsDetailsModalOpen(false);
-    setSelectedSale(null); // Limpiamos el estado al cerrar
+    setSelectedSale(null);
   };
-  // -------------------------
 
   return (
     <div className="reports-page">
@@ -62,7 +68,6 @@ const ReportesPage = () => {
       {isLoading ? (
         <p>Cargando historial de ventas...</p>
       ) : (
-        // La prop 'onShowDetails' ya estaba siendo pasada, ahora la función a la que apunta tiene lógica.
         <SalesTable sales={sales} onShowDetails={handleShowDetails} />
       )}
 

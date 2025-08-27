@@ -1,4 +1,7 @@
+// src/pages/VentasPage.jsx
+
 import React, { useState, useEffect, useMemo } from 'react';
+import { useAuth } from '../context/AuthContext';
 import { getProductsRealtime } from '../services/productService';
 import { getClientsRealtime } from '../services/clientService';
 import { processSale } from '../services/saleService';
@@ -11,6 +14,9 @@ import { FiUserPlus } from 'react-icons/fi';
 import './VentasPage.css';
 
 const VentasPage = () => {
+  const { userData } = useAuth(); // <-- CAMBIO
+  const tenantId = userData?.tenantId;
+
   const [products, setProducts] = useState([]);
   const [clients, setClients] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -20,16 +26,20 @@ const VentasPage = () => {
   const [posSearchTerm, setPosSearchTerm] = useState('');
 
   useEffect(() => {
-    const unsubscribeProducts = getProductsRealtime((fetchedProducts) => {
+    if (!tenantId) return; // No hacer nada si el tenantId no está listo
+
+    // <-- CAMBIO: Se pasa el tenantId a las llamadas de servicio
+    const unsubscribeProducts = getProductsRealtime(tenantId, (fetchedProducts) => {
       setProducts(fetchedProducts);
       setIsLoading(false);
     });
-    const unsubscribeClients = getClientsRealtime(setClients);
+    const unsubscribeClients = getClientsRealtime(tenantId, setClients);
+    
     return () => {
       unsubscribeProducts();
       unsubscribeClients();
     };
-  }, []);
+  }, [tenantId]); // <-- CAMBIO: El efecto ahora depende del tenantId
 
   const handleAddToCart = (productToAdd) => {
     const existingItem = cart.find(item => item.id === productToAdd.id);
@@ -96,7 +106,6 @@ const VentasPage = () => {
     setSelectedClient(null);
   };
   
-  // Función para venta al contado (pagada en el momento)
   const handleCheckout = () => {
     const saleData = {
       items: cart,
@@ -110,8 +119,8 @@ const VentasPage = () => {
       cancelButtonColor: '#d33', confirmButtonText: 'Sí, cobrar', cancelButtonText: 'Cancelar'
     }).then((result) => {
       if (result.isConfirmed) {
-        // Se llama a processSale con 'false' para indicar que NO es a crédito
-        const promise = processSale(saleData, false);
+        // <-- CAMBIO: Se pasa el tenantId a processSale
+        const promise = processSale(tenantId, saleData, false);
         toast.promise(promise, {
           loading: 'Procesando venta...',
           success: <b>¡Venta completada!</b>,
@@ -122,7 +131,6 @@ const VentasPage = () => {
     });
   };
 
-  // NUEVA FUNCIÓN para venta a crédito
   const handleCreditSale = () => {
     const saleData = {
       items: cart,
@@ -140,8 +148,8 @@ const VentasPage = () => {
       cancelButtonText: 'Cancelar'
     }).then((result) => {
       if (result.isConfirmed) {
-        // Se llama a processSale con 'true' para indicar que SÍ es a crédito
-        const promise = processSale(saleData, true);
+        // <-- CAMBIO: Se pasa el tenantId a processSale
+        const promise = processSale(tenantId, saleData, true);
         toast.promise(promise, {
           loading: 'Registrando venta a crédito...',
           success: <b>¡Venta a crédito registrada!</b>,
@@ -189,8 +197,8 @@ const VentasPage = () => {
           onUpdateQuantity={handleUpdateQuantity}
           onRemoveItem={handleRemoveFromCart}
           onCheckout={handleCheckout}
-          onCreditSale={handleCreditSale} // Pasamos la nueva función
-          selectedClient={selectedClient} // Pasamos el cliente seleccionado
+          onCreditSale={handleCreditSale}
+          selectedClient={selectedClient}
         />
       </div>
 

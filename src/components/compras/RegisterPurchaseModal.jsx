@@ -4,31 +4,45 @@ import React, { useState, useMemo } from 'react';
 import Modal from '../common/Modal';
 import Button from '../common/Button';
 import { FiTrash2 } from 'react-icons/fi';
-// Ya no importamos 'react-autocomplete'
 import './RegisterPurchaseModal.css';
 import { toast } from 'react-hot-toast';
 import { formatCurrency } from '../../utils/formatters';
 
-// Este sub-componente representa una fila de producto en la compra
-const PurchaseItemRow = ({ item, onQuantityChange, onCostChange, onRemove }) => (
-  <div className="purchase-item-row">
-    <span>{item.productName}</span>
-    <input
-      type="number"
-      value={item.quantity}
-      onChange={(e) => onQuantityChange(item.productId, parseInt(e.target.value) || 0)}
-      placeholder="Cantidad"
-    />
-    <input
-      type="number"
-      value={item.costPrice}
-      onChange={(e) => onCostChange(item.productId, parseFloat(e.target.value) || 0)}
-      placeholder="Costo Unit."
-    />
-    <span>{formatCurrency(item.quantity * item.costPrice)}</span>
-    <button onClick={() => onRemove(item.productId)}><FiTrash2 /></button>
-  </div>
-);
+// --- SUB-COMPONENTE MODIFICADO ---
+const PurchaseItemRow = ({ item, onQuantityChange, onCostChange, onRemove }) => {
+  // Manejador de cambio inteligente para la cantidad
+  const handleQuantityChange = (e) => {
+    let value = e.target.value;
+    // Si el valor empieza con 0 y tiene más de un dígito (ej: "012"),
+    // lo convertimos a número para quitar el cero inicial (12).
+    if (value.startsWith('0') && value.length > 1) {
+      value = parseInt(value, 10).toString();
+    }
+    // Pasamos el valor numérico al manejador principal. Si está vacío, pasa 0.
+    onQuantityChange(item.productId, parseInt(value) || 0);
+  };
+
+  return (
+    <div className="purchase-item-row">
+      <span>{item.productName}</span>
+      <input
+        type="number"
+        value={item.quantity.toString()} // Pasamos el valor como string para tener más control
+        onChange={handleQuantityChange}
+        placeholder="Cantidad"
+      />
+      <input
+        type="number"
+        value={item.costPrice}
+        onChange={(e) => onCostChange(item.productId, parseFloat(e.target.value) || 0)}
+        placeholder="Costo Unit."
+      />
+      <span>{formatCurrency(item.quantity * item.costPrice)}</span>
+      <button onClick={() => onRemove(item.productId)}><FiTrash2 /></button>
+    </div>
+  );
+};
+// ------------------------------
 
 const RegisterPurchaseModal = ({ isOpen, onClose, suppliers, products, onRegisterPurchase }) => {
   const [selectedSupplier, setSelectedSupplier] = useState('');
@@ -38,7 +52,7 @@ const RegisterPurchaseModal = ({ isOpen, onClose, suppliers, products, onRegiste
   const handleAddProduct = (product) => {
     if (purchaseItems.find(item => item.productId === product.id)) {
       toast.error('Este producto ya está en la lista.');
-      setSearchTerm(''); // Limpiamos la búsqueda aunque haya error
+      setSearchTerm('');
       return;
     }
     const newItem = {
@@ -49,7 +63,7 @@ const RegisterPurchaseModal = ({ isOpen, onClose, suppliers, products, onRegiste
       costPrice: product.costPrice || 0,
     };
     setPurchaseItems([...purchaseItems, newItem]);
-    setSearchTerm(''); // Limpiamos la búsqueda después de añadir
+    setSearchTerm('');
   };
 
   const handleUpdateQuantity = (productId, quantity) => {
@@ -85,7 +99,6 @@ const RegisterPurchaseModal = ({ isOpen, onClose, suppliers, products, onRegiste
     onRegisterPurchase(purchaseData);
   };
 
-  // Filtramos la lista de productos para el autocompletado
   const filteredProducts = products.filter(p =>
     searchTerm && p.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -98,7 +111,6 @@ const RegisterPurchaseModal = ({ isOpen, onClose, suppliers, products, onRegiste
           {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
         </select>
 
-        {/* --- NUESTRO AUTOCOMPLETADO PERSONALIZADO --- */}
         <div className="autocomplete-wrapper">
           <input
             type="text"

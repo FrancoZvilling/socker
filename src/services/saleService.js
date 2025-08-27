@@ -1,178 +1,119 @@
 // src/services/saleService.js
 import { db } from '../config/firebase';
 import {
-  collection,
-  doc,
-  writeBatch,
-  addDoc,
-  serverTimestamp,
-  query,
-  orderBy,
-  onSnapshot,
-  Timestamp,
-  where,
-  increment // <-- Se añade 'increment' para la operación atómica
+  collection, doc, writeBatch, serverTimestamp, query, orderBy,
+  onSnapshot, Timestamp, where, increment
 } from 'firebase/firestore';
 
-// Referencias a nuestras colecciones (sin cambios)
-const productsCollectionRef = collection(db, 'products');
-const movementsCollectionRef = collection(db, 'movements');
-const salesCollectionRef = collection(db, 'sales');
+// Funciones de ayuda para obtener las referencias a las subcolecciones
+const getSalesCollectionRef = (tenantId) => collection(db, 'tenants', tenantId, 'sales');
+const getMovementsCollectionRef = (tenantId) => collection(db, 'tenants', tenantId, 'movements');
+const getProductsCollectionRef = (tenantId) => collection(db, 'tenants', tenantId, 'products');
+const getClientsCollectionRef = (tenantId) => collection(db, 'tenants', tenantId, 'clients');
 
-// --- FUNCIÓN processSale MODIFICADA Y SEGURA ---
-// Se añade el nuevo parámetro 'isCreditSale' para diferenciar el tipo de venta
-export const processSale = async (saleData, isCreditSale) => {
-  // 1. Iniciamos un lote de escritura. Todas las operaciones dentro del lote son atómicas.
+// Procesa una venta (ya adaptado para recibir tenantId implícitamente en el futuro)
+export const processSale = async (tenantId, saleData, isCreditSale) => {
   const batch = writeBatch(db);
-
-  // 2. Preparamos el registro de la venta.
   const saleRecord = {
-    items: saleData.items,
-    total: saleData.total,
-    client: saleData.client,
-    createdAt: serverTimestamp(),
-    paymentStatus: isCreditSale ? 'pending' : 'paid', // Guardamos si la venta fue a crédito o pagada
+    items: saleData.items, total: saleData.total, client: saleData.client,
+    createdAt: serverTimestamp(), paymentStatus: isCreditSale ? 'pending' : 'paid',
   };
-  // Creamos una referencia para el nuevo documento de venta y lo añadimos al lote.
-  const newSaleRef = doc(salesCollectionRef);
+  const newSaleRef = doc(getSalesCollectionRef(tenantId));
   batch.set(newSaleRef, saleRecord);
 
-
-  // 3. Si la venta es a crédito y hay un cliente asociado, actualizamos su saldo de forma segura.
   if (isCreditSale && saleData.client) {
-    const clientRef = doc(db, 'clients', saleData.client.id);
-    // 'increment(saleData.total)' es una operación atómica que se ejecuta en el servidor de Firebase.
-    // Suma el total de la venta al saldo actual del cliente de forma segura.
+    const clientRef = doc(getClientsCollectionRef(tenantId), saleData.client.id);
     batch.update(clientRef, { balance: increment(saleData.total) });
   }
 
-  // 4. Iteramos sobre los items para actualizar stock y crear movimientos (lógica similar a la anterior).
   for (const item of saleData.items) {
-    const productRef = doc(productsCollectionRef, item.id);
+    const productRef = doc(getProductsCollectionRef(tenantId), item.id);
     const newStock = item.stock - item.quantity;
-
-    // Añadimos la actualización del stock al lote.
     batch.update(productRef, { stock: newStock });
 
-    // Preparamos el registro de movimiento.
     const movementData = {
-      productId: item.id,
-      productName: item.name,
-      type: 'Venta',
-      quantityChange: -item.quantity,
-      previousStock: item.stock,
-      newStock: newStock,
-      timestamp: serverTimestamp(),
-      clientId: saleData.client ? saleData.client.id : null,
+      productId: item.id, productName: item.name, type: 'Venta',
+      quantityChange: -item.quantity, previousStock: item.stock, newStock: newStock,
+      timestamp: serverTimestamp(), clientId: saleData.client ? saleData.client.id : null,
       clientName: saleData.client ? saleData.client.name : 'Consumidor Final',
     };
-    
-    // Añadimos la creación del movimiento al lote.
-    const newMovementRef = doc(movementsCollectionRef);
+    const newMovementRef = doc(getMovementsCollectionRef(tenantId));
     batch.set(newMovementRef, movementData);
   }
-
-  // 5. Ejecutamos todas las operaciones del lote.
-  // Si alguna falla, ninguna se aplicará.
   await batch.commit();
 };
 
-
-// --- El resto de las funciones de lectura no cambian ---
-
-export const getSalesRealtime = (callback, date = null) => {
+// Obtiene todas las ventas
+export const getSalesRealtime = (tenantId, callback, date = null) => {
   let q;
-
   if (date) {
-    // --- ESTA ES LA PARTE CORREGIDA ---
-    // En lugar de new Date(date), construimos la fecha a partir de sus partes
-    // para forzar la interpretación en la zona horaria local.
     const [year, month, day] = date.split('-').map(Number);
-    // El mes en el constructor de Date es 0-indexado (0=Enero, 11=Diciembre)
     const startOfDay = new Date(year, month - 1, day);
-    startOfDay.setHours(0, 0, 0, 0);
-    const startTimestamp = Timestamp.fromDate(startOfDay);
-
-    const endOfDay = new Date(year, month - 1, day);
-    endOfDay.setHours(23, 59, 59, 999);
-    const endTimestamp = Timestamp.fromDate(endOfDay);
-    // ------------------------------------
-
+    const endOfDay = new Date(year, month - 1, day, 23, 59, 59, 999);
     q = query(
-      salesCollectionRef,
-      where("createdAt", ">=", startTimestamp),
-      where("createdAt", "<=", endTimestamp),
+      getSalesCollectionRef(tenantId),
+      where("createdAt", ">=", Timestamp.fromDate(startOfDay)),
+      where("createdAt", "<=", Timestamp.fromDate(endOfDay)),
       orderBy("createdAt", "desc")
     );
   } else {
-    q = query(salesCollectionRef, orderBy("createdAt", "desc"));
+    q = query(getSalesCollectionRef(tenantId), orderBy("createdAt", "desc"));
   }
-
-  const unsubscribe = onSnapshot(q, (snapshot) => {
-    const sales = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
+  return onSnapshot(q, (snapshot) => {
+    const sales = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     callback(sales);
   });
-
-  return unsubscribe;
 };
 
-export const getClientSalesRealtime = (clientId, callback) => {
+// Obtiene las ventas de un cliente
+export const getClientSalesRealtime = (tenantId, clientId, callback) => {
   const q = query(
-    salesCollectionRef,
+    getSalesCollectionRef(tenantId),
     where("client.id", "==", clientId),
     orderBy("createdAt", "desc")
   );
-
-  const unsubscribe = onSnapshot(q, (snapshot) => {
-    const clientSales = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
+  return onSnapshot(q, (snapshot) => {
+    const clientSales = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     callback(clientSales);
   });
-
-  return unsubscribe;
 };
 
-export const getTodaySalesRealtime = (callback) => {
+// Obtiene las ventas de hoy para el dashboard
+export const getTodaySalesRealtime = (tenantId, callback) => {
   const startOfToday = new Date();
   startOfToday.setHours(0, 0, 0, 0);
   const startTimestamp = Timestamp.fromDate(startOfToday);
-  const q = query(salesCollectionRef, where("createdAt", ">=", startTimestamp));
-  const unsubscribe = onSnapshot(q, (snapshot) => {
+  const q = query(getSalesCollectionRef(tenantId), where("createdAt", ">=", startTimestamp));
+  return onSnapshot(q, (snapshot) => {
     const todaySales = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     callback(todaySales);
   });
-  return unsubscribe;
 };
 
-export const getWeekSalesRealtime = (callback) => {
+// Obtiene las ventas de la semana para el dashboard
+export const getWeekSalesRealtime = (tenantId, callback) => {
   const today = new Date();
   const dayOfWeek = today.getDay();
   const diff = today.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
-  const startOfWeek = new Date(today.setDate(diff));
+  const startOfWeek = new Date(today.getFullYear(), today.getMonth(), diff);
   startOfWeek.setHours(0, 0, 0, 0);
   const startTimestamp = Timestamp.fromDate(startOfWeek);
-  const q = query(salesCollectionRef, where("createdAt", ">=", startTimestamp));
-  const unsubscribe = onSnapshot(q, (snapshot) => {
+  const q = query(getSalesCollectionRef(tenantId), where("createdAt", ">=", startTimestamp));
+  return onSnapshot(q, (snapshot) => {
     const weekSales = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     callback(weekSales);
-});
-  return unsubscribe;
+  });
 };
 
-export const getMonthSalesRealtime = (callback) => {
+// Obtiene las ventas del mes para el dashboard
+export const getMonthSalesRealtime = (tenantId, callback) => {
   const today = new Date();
   const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
   startOfMonth.setHours(0, 0, 0, 0);
   const startTimestamp = Timestamp.fromDate(startOfMonth);
-  const q = query(salesCollectionRef, where("createdAt", ">=", startTimestamp));
-  const unsubscribe = onSnapshot(q, (snapshot) => {
+  const q = query(getSalesCollectionRef(tenantId), where("createdAt", ">=", startTimestamp));
+  return onSnapshot(q, (snapshot) => {
     const monthSales = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     callback(monthSales);
   });
-  return unsubscribe;
 };

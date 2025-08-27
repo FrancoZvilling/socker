@@ -1,22 +1,26 @@
 // src/components/inventario/ProductHistoryModal.jsx
+
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import Modal from '../common/Modal';
 import { getProductMovements } from '../../services/productService';
 import './ProductHistoryModal.css';
 
 const ProductHistoryModal = ({ product, onClose }) => {
+  const { userData } = useAuth(); // <-- CAMBIO
+  const tenantId = userData?.tenantId;
   const [movements, setMovements] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (product) {
-      const unsubscribe = getProductMovements(product.id, (fetchedMovements) => {
+    if (product && tenantId) {
+      const unsubscribe = getProductMovements(tenantId, product.id, (fetchedMovements) => {
         setMovements(fetchedMovements);
         setIsLoading(false);
       });
-      return () => unsubscribe(); // Limpiamos la suscripción al desmontar
+      return () => unsubscribe();
     }
-  }, [product]);
+  }, [product, tenantId]);
 
   if (!product) return null;
 
@@ -39,7 +43,7 @@ const ProductHistoryModal = ({ product, onClose }) => {
           <tbody>
             {movements.map(move => (
               <tr key={move.id}>
-                <td>{move.timestamp.toDate().toLocaleString()}</td>
+                <td>{move.timestamp && move.timestamp.toDate ? move.timestamp.toDate().toLocaleString() : 'Fecha no disponible'}</td>
                 <td>{move.type}</td>
                 <td className={move.quantityChange > 0 ? 'positive' : 'negative'}>
                   {move.quantityChange > 0 ? `+${move.quantityChange}` : move.quantityChange}

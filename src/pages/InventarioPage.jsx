@@ -1,6 +1,7 @@
 // src/pages/InventarioPage.jsx
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { useAuth } from '../context/AuthContext';
 import { FiPlus } from 'react-icons/fi';
 import Button from '../components/common/Button';
 import Modal from '../components/common/Modal';
@@ -20,53 +21,56 @@ import RegisterPurchaseModal from '../components/compras/RegisterPurchaseModal';
 
 // Estilos
 import './InventarioPage.css';
+import '../styles/common.css'; // Asegúrate de que los estilos comunes estén aquí
 
 const InventarioPage = () => {
-  // Estados para productos y su gestión
+  const { userData } = useAuth(); 
+  const tenantId = userData?.tenantId;
+
+  // Estados
   const [products, setProducts] = useState([]);
+  const [suppliers, setSuppliers] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [productToEdit, setProductToEdit] = useState(null);
   const [selectedProductForHistory, setSelectedProductForHistory] = useState(null);
-
-  // Estados para proveedores y compras
-  const [suppliers, setSuppliers] = useState([]);
-  
-  // Estados para el control de modales y carga
-  const [isLoading, setIsLoading] = useState(true);
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false);
-
-  // Estados para filtros
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
 
-  // Efectos para cargar datos iniciales
+  // Efecto para cargar datos iniciales
   useEffect(() => {
-    const unsubscribeProducts = getProductsRealtime((fetchedProducts) => {
+    if (!tenantId) return;
+
+    const unsubscribeProducts = getProductsRealtime(tenantId, (fetchedProducts) => {
       setProducts(fetchedProducts);
       setIsLoading(false);
     });
-    const unsubscribeSuppliers = getSuppliersRealtime(setSuppliers);
+    const unsubscribeSuppliers = getSuppliersRealtime(tenantId, setSuppliers);
     
-    return () => { // Limpieza de ambas suscripciones
+    return () => {
       unsubscribeProducts();
       unsubscribeSuppliers();
     };
-  }, []);
+  }, [tenantId]);
 
   // Lógica de filtrado
   const filteredProducts = useMemo(() => {
     return products.filter(product => {
       const categoryMatch = selectedCategory ? product.category === selectedCategory : true;
       const searchTermLower = searchTerm.toLowerCase();
-      const searchMatch = product.name.toLowerCase().includes(searchTermLower) || product.sku.toLowerCase().includes(searchTermLower);
+      const searchMatch = product.name.toLowerCase().includes(searchTermLower) || (product.sku && product.sku.toLowerCase().includes(searchTermLower));
       return categoryMatch && searchMatch;
     });
   }, [products, searchTerm, selectedCategory]);
 
-  const uniqueCategories = useMemo(() => [...new Set(products.map(p => p.category))], [products]);
+  const uniqueCategories = useMemo(() => {
+    if (!products) return [];
+    return [...new Set(products.map(p => p.category))];
+  }, [products]);
 
-  // Handlers para el modal de Producto (Crear/Editar)
+  // Handlers para el modal de Producto
   const handleOpenProductModal = (product = null) => {
     setProductToEdit(product);
     setIsProductModalOpen(true);
@@ -82,7 +86,7 @@ const InventarioPage = () => {
 
   // Handler para el modal de Compras
   const handleRegisterPurchase = (purchaseData) => {
-    const promise = registerPurchase(purchaseData);
+    const promise = registerPurchase(tenantId, purchaseData);
     toast.promise(promise, {
       loading: 'Registrando compra...',
       success: <b>¡Compra registrada con éxito!</b>,
@@ -103,7 +107,7 @@ const InventarioPage = () => {
       cancelButtonText: 'Cancelar'
     }).then((result) => {
       if (result.isConfirmed) {
-        const promise = deleteProduct(id);
+        const promise = deleteProduct(tenantId, id);
         toast.promise(promise, {
           loading: 'Eliminando producto...',
           success: <b>¡Producto eliminado!</b>,

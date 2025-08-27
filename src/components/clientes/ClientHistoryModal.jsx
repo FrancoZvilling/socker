@@ -1,31 +1,36 @@
 // src/components/clientes/ClientHistoryModal.jsx
+
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import Modal from '../common/Modal';
 import Button from '../common/Button';
 import Input from '../common/Input';
 import { getClientSalesRealtime } from '../../services/saleService';
-import { registerClientPayment } from '../../services/clientService'; // <-- 1. IMPORTAMOS EL SERVICIO DE PAGO
+import { registerClientPayment } from '../../services/clientService';
 import { formatCurrency } from '../../utils/formatters';
 import { toast } from 'react-hot-toast';
-import './ClientHistoryModal.css'; // Crearemos/actualizaremos este archivo
+import './ClientHistoryModal.css';
 
 const ClientHistoryModal = ({ client, onClose }) => {
+  const { userData } = useAuth(); // <-- CAMBIO
+  const tenantId = userData?.tenantId;
+
   const [sales, setSales] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [paymentAmount, setPaymentAmount] = useState(''); // <-- 2. ESTADO PARA EL MONTO DEL PAGO
+  const [paymentAmount, setPaymentAmount] = useState('');
 
   useEffect(() => {
-    if (client) {
-      const unsubscribe = getClientSalesRealtime(client.id, (fetchedSales) => {
-        // Por ahora solo mostramos ventas. Más adelante combinaremos con pagos.
+    // El efecto ahora depende de que existan tanto el cliente como el tenantId
+    if (client && tenantId) {
+      // --- 3. Pasa el tenantId a la llamada del servicio ---
+      const unsubscribe = getClientSalesRealtime(tenantId, client.id, (fetchedSales) => {
         setSales(fetchedSales);
         setIsLoading(false);
       });
       return () => unsubscribe();
     }
-  }, [client]);
+  }, [client, tenantId]); // <-- 4. El efecto ahora depende también de tenantId
 
-  // --- 3. FUNCIÓN PARA MANEJAR EL REGISTRO DE PAGO ---
   const handleRegisterPayment = () => {
     const amount = parseFloat(paymentAmount);
     if (!amount || amount <= 0) {
@@ -33,7 +38,8 @@ const ClientHistoryModal = ({ client, onClose }) => {
       return;
     }
 
-    const promise = registerClientPayment(client.id, amount);
+    // --- 3. Pasa el tenantId a la llamada del servicio ---
+    const promise = registerClientPayment(tenantId, client.id, amount);
     toast.promise(promise, {
       loading: 'Registrando pago...',
       success: <b>¡Pago registrado con éxito!</b>,
@@ -41,7 +47,7 @@ const ClientHistoryModal = ({ client, onClose }) => {
     });
     
     promise.then(() => {
-      setPaymentAmount(''); // Limpiamos el input después del éxito
+      setPaymentAmount('');
       onClose();
     });
   };
@@ -49,9 +55,7 @@ const ClientHistoryModal = ({ client, onClose }) => {
   if (!client) return null;
 
   return (
-    // Usaremos un título más apropiado
     <Modal isOpen={true} onClose={onClose} title={`Estado de Cuenta: ${client.name}`}>
-      {/* --- 4. SECCIÓN DEL SALDO Y FORMULARIO DE PAGO --- */}
       <div className="account-summary">
         <div className="balance-display">
           <span>Saldo Actual</span>
@@ -83,10 +87,9 @@ const ClientHistoryModal = ({ client, onClose }) => {
       {isLoading ? (
         <p>Cargando historial...</p>
       ) : sales.length === 0 ? (
-        <p>Este cliente aún no ha realizado compras a crédito.</p>
+        <p>Este cliente aún no ha realizado compras.</p>
       ) : (
         <div className="table-container">
-          {/* La tabla de ventas por ahora se mantiene igual */}
           <table>
             <thead>
               <tr>
@@ -101,7 +104,7 @@ const ClientHistoryModal = ({ client, onClose }) => {
                   <td>{sale.createdAt ? sale.createdAt.toDate().toLocaleString() : 'N/A'}</td>
                   <td>{formatCurrency(sale.total)}</td>
                   <td className={sale.paymentStatus === 'pending' ? 'status-pending' : 'status-paid'}>
-                    {sale.paymentStatus === 'pending' ? 'Pendiente' : 'Pagado'}
+                    {sale.paymentStatus === 'pending' ? 'A crédito' : 'Pagado'}
                   </td>
                 </tr>
               ))}

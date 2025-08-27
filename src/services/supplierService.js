@@ -11,16 +11,19 @@ import {
   orderBy
 } from 'firebase/firestore';
 
-const suppliersCollectionRef = collection(db, 'suppliers');
+// 1. Reemplazamos la referencia de colección estática por una función dinámica.
+// Esta función construye la ruta a la subcolección 'suppliers' DENTRO de un 'tenant' específico.
+const getSuppliersCollectionRef = (tenantId) => collection(db, 'tenants', tenantId, 'suppliers');
 
-// CREATE: Añadir un nuevo proveedor
-export const addSupplier = (supplierData) => {
-  return addDoc(suppliersCollectionRef, supplierData);
+// 2. CREATE: La función ahora requiere 'tenantId' como primer parámetro.
+export const addSupplier = (tenantId, supplierData) => {
+  // Usamos la nueva función para obtener la referencia correcta.
+  return addDoc(getSuppliersCollectionRef(tenantId), { ...supplierData, createdAt: new Date() });
 };
 
-// READ: Obtener todos los proveedores en tiempo real
-export const getSuppliersRealtime = (callback) => {
-  const q = query(suppliersCollectionRef, orderBy('name')); // Ordenados por nombre
+// 3. READ: La función ahora requiere 'tenantId' como primer parámetro.
+export const getSuppliersRealtime = (tenantId, callback) => {
+  const q = query(getSuppliersCollectionRef(tenantId), orderBy('name')); // Ordenados por nombre
   const unsubscribe = onSnapshot(q, (snapshot) => {
     const suppliers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     callback(suppliers);
@@ -28,14 +31,15 @@ export const getSuppliersRealtime = (callback) => {
   return unsubscribe;
 };
 
-// UPDATE: Actualizar un proveedor existente
-export const updateSupplier = (id, supplierData) => {
-  const supplierDoc = doc(db, 'suppliers', id);
+// 4. UPDATE: La función ahora requiere 'tenantId' como primer parámetro.
+export const updateSupplier = (tenantId, id, supplierData) => {
+  // La referencia al documento ahora debe incluir la ruta completa del 'tenant'.
+  const supplierDoc = doc(db, 'tenants', tenantId, 'suppliers', id);
   return updateDoc(supplierDoc, supplierData);
 };
 
-// DELETE: Eliminar un proveedor
-export const deleteSupplier = (id) => {
-  const supplierDoc = doc(db, 'suppliers', id);
+// 5. DELETE: La función ahora requiere 'tenantId' como primer parámetro.
+export const deleteSupplier = (tenantId, id) => {
+  const supplierDoc = doc(db, 'tenants', tenantId, 'suppliers', id);
   return deleteDoc(supplierDoc);
 };
