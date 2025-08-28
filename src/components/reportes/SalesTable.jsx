@@ -1,10 +1,11 @@
 // src/components/reportes/SalesTable.jsx
 import React from 'react';
-import { FiEye } from 'react-icons/fi';
+import { FiEye, FiPrinter } from 'react-icons/fi'; // Se añade el ícono de impresora
 import { formatCurrency } from '../../utils/formatters';
 import './SalesTable.css';
 
-const SalesTable = ({ sales, onShowDetails }) => {
+// Se añade el nuevo prop 'onPrint'
+const SalesTable = ({ sales, onShowDetails, onPrint }) => {
   if (sales.length === 0) {
     return <p>Aún no se han registrado ventas.</p>;
   }
@@ -16,9 +17,9 @@ const SalesTable = ({ sales, onShowDetails }) => {
           <tr>
             <th>Fecha y Hora</th>
             <th>Total Venta</th>
-            <th>Costo Total</th> {/* <-- Columna añadida */}
-            <th>Ganancia</th>    {/* <-- Columna añadida */}
-            <th>Detalles</th>
+            <th>Costo Total</th>
+            <th>Ganancia</th>
+            <th>Acciones</th>
           </tr>
         </thead>
         <tbody>
@@ -28,12 +29,24 @@ const SalesTable = ({ sales, onShowDetails }) => {
                 {sale.createdAt ? sale.createdAt.toDate().toLocaleString() : 'Fecha no disponible'}
               </td>
               <td>{formatCurrency(sale.total)}</td>
-              {/* Se muestran los nuevos datos. Se usa '|| 0' como respaldo para ventas antiguas que no tengan el campo. */}
               <td>{formatCurrency(sale.totalCost || 0)}</td>
               <td className="profit-cell">{formatCurrency(sale.profit || 0)}</td>
-              <td>
-                <button className="icon-button" title="Ver detalles de la venta" onClick={() => onShowDetails(sale)}>
+              {/* La celda ahora contiene dos botones */}
+              <td className="actions-cell">
+                <button 
+                  className="icon-button" 
+                  title="Ver detalles de la venta" 
+                  onClick={() => onShowDetails(sale)}
+                >
                   <FiEye />
+                </button>
+                {/* Se añade el nuevo botón para imprimir */}
+                <button 
+                  className="icon-button" 
+                  title="Imprimir Ticket" 
+                  onClick={() => onPrint(sale)}
+                >
+                  <FiPrinter />
                 </button>
               </td>
             </tr>

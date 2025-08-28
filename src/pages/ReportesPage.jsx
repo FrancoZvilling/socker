@@ -2,13 +2,17 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useBusiness } from '../context/BusinessContext'; // Se importa para obtener los datos del negocio
 import { getSalesRealtime } from '../services/saleService';
+import { generateReceiptPDF } from '../utils/receiptGenerator'; // Se importa la función para generar PDFs
 import SalesTable from '../components/reportes/SalesTable';
 import SaleDetailsModal from '../components/reportes/SaleDetailsModal';
+import { toast } from 'react-hot-toast';
 import './ReportesPage.css';
 
 const ReportesPage = () => {
-  const { userData } = useAuth(); // <-- CAMBIO
+  const { userData } = useAuth();
+  const { businessData } = useBusiness(); // Se obtiene la información del negocio (nombre, etc.)
   const tenantId = userData?.tenantId;
 
   const [sales, setSales] = useState([]);
@@ -18,17 +22,16 @@ const ReportesPage = () => {
   const [selectedDate, setSelectedDate] = useState('');
 
   useEffect(() => {
-    if (!tenantId) return; // No hacer nada si no hay tenantId
+    if (!tenantId) return;
 
     setIsLoading(true);
-    // --- 3. Pasa el tenantId a la llamada del servicio ---
     const unsubscribe = getSalesRealtime(tenantId, (fetchedSales) => {
       setSales(fetchedSales);
       setIsLoading(false);
     }, selectedDate);
 
     return () => unsubscribe();
-  }, [selectedDate, tenantId]); // <-- 4. El efecto ahora depende también de tenantId
+  }, [selectedDate, tenantId]);
 
   const handleShowDetails = (sale) => {
     setSelectedSale(sale);
@@ -38,6 +41,15 @@ const ReportesPage = () => {
   const handleCloseDetailsModal = () => {
     setIsDetailsModalOpen(false);
     setSelectedSale(null);
+  };
+
+  // Se añade la nueva función para manejar la impresión
+  const handlePrintReceipt = (sale) => {
+    if (!businessData) {
+      toast.error("Datos del negocio no cargados. Intente de nuevo.");
+      return;
+    }
+    generateReceiptPDF(businessData, sale);
   };
 
   return (
@@ -68,7 +80,12 @@ const ReportesPage = () => {
       {isLoading ? (
         <p>Cargando historial de ventas...</p>
       ) : (
-        <SalesTable sales={sales} onShowDetails={handleShowDetails} />
+        // Se pasa la nueva función 'onPrint' a la tabla
+        <SalesTable
+          sales={sales}
+          onShowDetails={handleShowDetails}
+          onPrint={handlePrintReceipt}
+        />
       )}
 
       {isDetailsModalOpen && (

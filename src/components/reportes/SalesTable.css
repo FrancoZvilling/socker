@@ -50,3 +50,5 @@ tbody tr:hover {
       color: #2f855a;
       font-weight: bold;
     }
+
+.actions-cell { display: flex; gap: 10px; }
