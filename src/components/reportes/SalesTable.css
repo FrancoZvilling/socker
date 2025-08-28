@@ -45,3 +45,8 @@ tbody tr:hover {
 .icon-button:hover {
     background-color: #e2e8f0;
 }
+
+.profit-cell {
+      color: #2f855a;
+      font-weight: bold;
+    }

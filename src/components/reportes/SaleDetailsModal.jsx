@@ -1,11 +1,11 @@
 // src/components/reportes/SaleDetailsModal.jsx
+
 import React from 'react';
 import Modal from '../common/Modal';
 import { formatCurrency } from '../../utils/formatters';
 import './SaleDetailsModal.css';
 
 const SaleDetailsModal = ({ sale, onClose }) => {
-  // Si no hay una venta seleccionada, no renderizamos nada.
   if (!sale) {
     return null;
   }
@@ -25,8 +25,9 @@ const SaleDetailsModal = ({ sale, onClose }) => {
           <thead>
             <tr>
               <th>Producto</th>
-              <th>Cantidad</th>
-              <th>Precio Unit.</th>
+              <th>Cant.</th>
+              <th>P. Venta Unit.</th> 
+              <th>P. Costo Unit.</th> {/* <-- Nueva columna */}
               <th>Subtotal</th>
             </tr>
           </thead>
@@ -36,14 +37,22 @@ const SaleDetailsModal = ({ sale, onClose }) => {
                 <td>{item.name}</td>
                 <td>{item.quantity}</td>
                 <td>{formatCurrency(item.price)}</td>
+                <td>{formatCurrency(item.costPrice || 0)}</td> {/* <-- Nueva celda */}
                 <td>{formatCurrency(item.price * item.quantity)}</td>
               </tr>
             ))}
           </tbody>
         </table>
+        {/* --- Pie del modal actualizado --- */}
         <div className="sale-total-footer">
-          <span>TOTAL VENTA</span>
-          <span>{formatCurrency(sale.total)}</span>
+          <div className="costs-and-profit">
+            <span>Costo Total: {formatCurrency(sale.totalCost || 0)}</span>
+            <span className="profit-value">Ganancia: {formatCurrency(sale.profit || 0)}</span>
+          </div>
+          <div className="final-total">
+            <span>TOTAL VENTA</span>
+            <span>{formatCurrency(sale.total)}</span>
+          </div>
         </div>
       </div>
     </Modal>

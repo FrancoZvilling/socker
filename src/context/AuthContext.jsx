@@ -1,59 +1,68 @@
 // src/context/AuthContext.jsx
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { onAuthStateChanged } from 'firebase/auth'; // Observador de Auth
-import { doc, getDoc } from 'firebase/firestore'; // Para leer documentos de Firestore
-import { auth, db } from '../config/firebase'; // Asegúrate de exportar 'db' y 'auth' desde tu config
+import { onAuthStateChanged } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
+import { auth, db } from '../config/firebase';
+import ROLES from '../config/permissions'; // Se importa la configuración de roles y permisos
 
-// Creamos los contextos
 const AuthContext = createContext();
 
-// Hook personalizado para usar el contexto fácilmente
 export const useAuth = () => {
   return useContext(AuthContext);
 };
 
-// El proveedor que envolverá nuestra aplicación
 export const AuthProvider = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState(null); // Para el usuario de Firebase Auth
-  const [userData, setUserData] = useState(null); // Para nuestros datos de Firestore (rol, tenantId)
-  const [isLoading, setIsLoading] = useState(true); // Para saber si estamos verificando la sesión
+  const [currentUser, setCurrentUser] = useState(null);
+  const [userData, setUserData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // onAuthStateChanged es un listener que se ejecuta cuando el estado de auth cambia (login/logout)
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setCurrentUser(user); // Guardamos el usuario de Auth (o null)
+      setCurrentUser(user);
       
       if (user) {
-        // Si hay un usuario, vamos a buscar sus datos en nuestra colección 'users'
         const userDocRef = doc(db, 'users', user.uid);
         const userDocSnap = await getDoc(userDocRef);
 
         if (userDocSnap.exists()) {
-          // Si encontramos el documento, guardamos sus datos (rol, tenantId)
           setUserData(userDocSnap.data());
         } else {
-          // Esto podría pasar si un usuario existe en Auth pero no en nuestra DB.
-          // Es un caso de error que deberíamos manejar.
           console.error("Error: Usuario autenticado no encontrado en la base de datos.");
           setUserData(null);
         }
       } else {
-        // Si no hay usuario, limpiamos nuestros datos
         setUserData(null);
       }
       
-      setIsLoading(false); // Terminamos de cargar
+      setIsLoading(false);
     });
 
-    // Limpiamos el listener al desmontar el componente para evitar fugas de memoria
     return unsubscribe;
   }, []);
 
-  // Los valores que proveeremos a toda la aplicación
+  // Nueva función para verificar si el usuario actual tiene un permiso específico
+  const hasPermission = (permission) => {
+    if (!userData || !userData.role) {
+      return false; // Si no hay datos de usuario o no tiene un rol, no tiene permisos.
+    }
+    
+    const userRole = userData.role; // ej: 'admin' o 'vendedor'
+    const userPermissions = ROLES[userRole]; // Se busca la lista de permisos para ese rol.
+
+    if (!userPermissions) {
+      return false; // Si el rol no existe en nuestra configuración, por seguridad no tiene permisos.
+    }
+    
+    // Devuelve 'true' si el permiso solicitado está en la lista de permisos del usuario, 'false' si no.
+    return userPermissions.includes(permission);
+  };
+
+  // Se añade la función 'hasPermission' al valor que provee el contexto
   const value = {
     currentUser,
     userData,
     isLoading,
+    hasPermission,
   };
 
   return (

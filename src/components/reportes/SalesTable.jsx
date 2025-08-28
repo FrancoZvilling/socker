@@ -15,8 +15,9 @@ const SalesTable = ({ sales, onShowDetails }) => {
         <thead>
           <tr>
             <th>Fecha y Hora</th>
-            <th>Total</th>
-            <th>Nº de Productos</th>
+            <th>Total Venta</th>
+            <th>Costo Total</th> {/* <-- Columna añadida */}
+            <th>Ganancia</th>    {/* <-- Columna añadida */}
             <th>Detalles</th>
           </tr>
         </thead>
@@ -24,11 +25,12 @@ const SalesTable = ({ sales, onShowDetails }) => {
           {sales.map(sale => (
             <tr key={sale.id}>
               <td>
-                {/* El campo 'createdAt' de Firebase es un Timestamp, hay que convertirlo */}
                 {sale.createdAt ? sale.createdAt.toDate().toLocaleString() : 'Fecha no disponible'}
               </td>
               <td>{formatCurrency(sale.total)}</td>
-              <td>{sale.items.length}</td>
+              {/* Se muestran los nuevos datos. Se usa '|| 0' como respaldo para ventas antiguas que no tengan el campo. */}
+              <td>{formatCurrency(sale.totalCost || 0)}</td>
+              <td className="profit-cell">{formatCurrency(sale.profit || 0)}</td>
               <td>
                 <button className="icon-button" title="Ver detalles de la venta" onClick={() => onShowDetails(sale)}>
                   <FiEye />

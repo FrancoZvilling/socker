@@ -1,0 +1,16 @@
+/* src/components/caja/CloseCashDrawerModal.css */
+.summary-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding: 15px;
+  background-color: #f7fafc;
+  border-radius: 8px;
+}
+.summary-grid span { font-size: 1rem; }
+.summary-grid .amount { text-align: right; font-weight: 600; }
+.summary-grid .total { font-weight: bold; grid-column: 1 / -1; margin-top: 10px; border-top: 1px solid #e2e8f0; padding-top: 10px; }
+.summary-grid.difference { background-color: #edf2f7; }
+.surplus { color: #38a169; } /* Verde */
+.shortage { color: #e53e3e; } /* Rojo */

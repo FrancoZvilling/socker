@@ -8,13 +8,15 @@ import { processSale } from '../services/saleService';
 import ProductGrid from '../components/ventas/ProductGrid';
 import Cart from '../components/ventas/Cart';
 import ClientSelectionModal from '../components/clientes/ClientSelectionModal';
+import PaymentMethodModal from '../components/ventas/PaymentMethodModal'; // Se añade la importación del nuevo modal
 import { toast } from 'react-hot-toast';
 import Swal from 'sweetalert2';
 import { FiUserPlus } from 'react-icons/fi';
+import { formatCurrency } from '../utils/formatters'; // Se añade la importación del formateador
 import './VentasPage.css';
 
 const VentasPage = () => {
-  const { userData } = useAuth(); // <-- CAMBIO
+  const { userData } = useAuth();
   const tenantId = userData?.tenantId;
 
   const [products, setProducts] = useState([]);
@@ -24,32 +26,28 @@ const VentasPage = () => {
   const [selectedClient, setSelectedClient] = useState(null);
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
   const [posSearchTerm, setPosSearchTerm] = useState('');
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false); // Nuevo estado para el modal de pago
 
   useEffect(() => {
-    if (!tenantId) return; // No hacer nada si el tenantId no está listo
-
-    // <-- CAMBIO: Se pasa el tenantId a las llamadas de servicio
+    if (!tenantId) return;
     const unsubscribeProducts = getProductsRealtime(tenantId, (fetchedProducts) => {
       setProducts(fetchedProducts);
       setIsLoading(false);
     });
     const unsubscribeClients = getClientsRealtime(tenantId, setClients);
-    
     return () => {
       unsubscribeProducts();
       unsubscribeClients();
     };
-  }, [tenantId]); // <-- CAMBIO: El efecto ahora depende del tenantId
+  }, [tenantId]);
 
   const handleAddToCart = (productToAdd) => {
     const existingItem = cart.find(item => item.id === productToAdd.id);
     if (existingItem && existingItem.quantity >= productToAdd.stock) {
-      toast.error('No hay más stock disponible para este producto.');
-      return;
+      toast.error('No hay más stock disponible para este producto.'); return;
     }
     if (!existingItem && productToAdd.stock <= 0) {
-      toast.error('Este producto no tiene stock disponible.');
-      return;
+      toast.error('Este producto no tiene stock disponible.'); return;
     }
     if (existingItem) {
       setCart(currentCart => currentCart.map(item =>
@@ -95,40 +93,33 @@ const VentasPage = () => {
     }
   };
 
-  const handleRemoveFromCart = (productId) => {
-    setCart(cart.filter(item => item.id !== productId));
-  };
-
+  const handleRemoveFromCart = (productId) => setCart(cart.filter(item => item.id !== productId));
   const totalPrice = useMemo(() => cart.reduce((total, item) => total + item.price * item.quantity, 0), [cart]);
-
   const handleClearCart = () => {
     setCart([]);
     setSelectedClient(null);
   };
   
+  // La función handleCheckout ahora solo abre el modal de selección de pago
   const handleCheckout = () => {
+    setIsPaymentModalOpen(true);
+  };
+
+  // Nueva función que se llama desde el modal de pago y procesa la venta
+  const handleProcessSale = (paymentMethod) => {
+    setIsPaymentModalOpen(false);
     const saleData = {
       items: cart,
       total: totalPrice,
       client: selectedClient ? { id: selectedClient.id, name: selectedClient.name } : null,
     };
-    Swal.fire({
-      title: 'Confirmar Venta',
-      text: `El total a cobrar es: ${totalPrice.toFixed(2)}. ¿Continuar?`,
-      icon: 'question', showCancelButton: true, confirmButtonColor: '#38a169',
-      cancelButtonColor: '#d33', confirmButtonText: 'Sí, cobrar', cancelButtonText: 'Cancelar'
-    }).then((result) => {
-      if (result.isConfirmed) {
-        // <-- CAMBIO: Se pasa el tenantId a processSale
-        const promise = processSale(tenantId, saleData, false);
-        toast.promise(promise, {
-          loading: 'Procesando venta...',
-          success: <b>¡Venta completada!</b>,
-          error: <b>Error al procesar la venta.</b>,
-        });
-        promise.then(() => handleClearCart());
-      }
+    const promise = processSale(tenantId, saleData, false, paymentMethod);
+    toast.promise(promise, {
+      loading: 'Procesando venta...',
+      success: <b>¡Venta completada!</b>,
+      error: <b>Error al procesar la venta.</b>,
     });
+    promise.then(() => handleClearCart());
   };
 
   const handleCreditSale = () => {
@@ -148,8 +139,8 @@ const VentasPage = () => {
       cancelButtonText: 'Cancelar'
     }).then((result) => {
       if (result.isConfirmed) {
-        // <-- CAMBIO: Se pasa el tenantId a processSale
-        const promise = processSale(tenantId, saleData, true);
+        // Se pasa 'credit' como método de pago implícito
+        const promise = processSale(tenantId, saleData, true, 'credit');
         toast.promise(promise, {
           loading: 'Registrando venta a crédito...',
           success: <b>¡Venta a crédito registrada!</b>,
@@ -208,6 +199,16 @@ const VentasPage = () => {
           onClose={() => setIsClientModalOpen(false)}
           clients={clients}
           onSelectClient={(client) => setSelectedClient(client)}
+        />
+      )}
+
+      {/* Se renderiza el nuevo modal de pago */}
+      {isPaymentModalOpen && (
+        <PaymentMethodModal
+          isOpen={isPaymentModalOpen}
+          onClose={() => setIsPaymentModalOpen(false)}
+          onSelectMethod={handleProcessSale}
+          totalAmount={formatCurrency(totalPrice)}
         />
       )}
     </div>

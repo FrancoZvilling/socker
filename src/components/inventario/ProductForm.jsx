@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { PERMISSIONS } from '../../config/permissions'; // <-- 1. Importa los permisos
 import { addProduct, updateProduct, createMovement } from '../../services/productService';
 import { getSuppliersRealtime } from '../../services/supplierService';
 import Input from '../common/Input';
@@ -10,18 +11,12 @@ import { toast } from 'react-hot-toast';
 import './ProductForm.css';
 
 const ProductForm = ({ onFormSubmit, initialData }) => {
-  const { userData } = useAuth(); // <-- CAMBIO
+  const { userData, hasPermission } = useAuth(); // <-- 2. Obtiene 'hasPermission'
   const tenantId = userData?.tenantId;
 
   const [formData, setFormData] = useState({
-    name: '',
-    sku: '',
-    category: '',
-    stock: '',
-    minStock: '',
-    price: '',
-    costPrice: '',
-    supplierId: '',
+    name: '', sku: '', category: '', stock: '', minStock: '',
+    price: '', costPrice: '', supplierId: '',
   });
   
   const [suppliers, setSuppliers] = useState([]);
@@ -34,17 +29,9 @@ const ProductForm = ({ onFormSubmit, initialData }) => {
 
   useEffect(() => {
     if (initialData) {
-      setFormData({
-        ...initialData,
-        minStock: initialData.minStock || '',
-        costPrice: initialData.costPrice || '',
-        supplierId: initialData.supplierId || '',
-      });
+      setFormData({ ...initialData, minStock: initialData.minStock || '', costPrice: initialData.costPrice || '', supplierId: initialData.supplierId || '', });
     } else {
-      setFormData({
-        name: '', sku: '', category: '', stock: '', minStock: '',
-        price: '', costPrice: '', supplierId: '',
-      });
+      setFormData({ name: '', sku: '', category: '', stock: '', minStock: '', price: '', costPrice: '', supplierId: '', });
     }
   }, [initialData]);
 
@@ -59,58 +46,49 @@ const ProductForm = ({ onFormSubmit, initialData }) => {
       toast.error("Error: No se ha identificado el negocio. Recargue la página.");
       return;
     }
-    
     const selectedSupplier = suppliers.find(s => s.id === formData.supplierId);
     const productData = {
-      name: formData.name,
-      sku: formData.sku,
-      category: formData.category,
-      stock: Number(formData.stock),
-      minStock: Number(formData.minStock),
-      price: Number(formData.price),
-      costPrice: Number(formData.costPrice),
-      supplierId: formData.supplierId,
-      supplierName: selectedSupplier ? selectedSupplier.name : 'N/A',
+      name: formData.name, sku: formData.sku, category: formData.category,
+      stock: Number(formData.stock), minStock: Number(formData.minStock),
+      price: Number(formData.price), costPrice: Number(formData.costPrice),
+      supplierId: formData.supplierId, supplierName: selectedSupplier ? selectedSupplier.name : 'N/A',
     };
-
     let promise;
     if (initialData) {
       promise = updateProduct(tenantId, initialData.id, productData);
       if (Number(initialData.stock) !== productData.stock) {
         const quantityChange = productData.stock - Number(initialData.stock);
         const movementData = {
-          productId: initialData.id,
-          productName: productData.name,
-          type: 'Ajuste Manual',
-          quantityChange,
-          previousStock: Number(initialData.stock),
-          newStock: productData.stock,
+          productId: initialData.id, productName: productData.name, type: 'Ajuste Manual',
+          quantityChange, previousStock: Number(initialData.stock), newStock: productData.stock,
           timestamp: new Date(),
         };
         createMovement(tenantId, movementData);
       }
-      toast.promise(promise, {
-        loading: 'Actualizando producto...',
-        success: <b>¡Producto actualizado!</b>,
-        error: <b>No se pudo actualizar.</b>,
-      });
+      toast.promise(promise, { loading: 'Actualizando producto...', success: <b>¡Producto actualizado!</b>, error: <b>No se pudo actualizar.</b>, });
     } else {
       promise = addProduct(tenantId, { ...productData, createdAt: new Date() });
-      toast.promise(promise, {
-        loading: 'Guardando producto...',
-        success: <b>¡Producto guardado!</b>,
-        error: <b>No se pudo guardar.</b>,
-      });
+      toast.promise(promise, { loading: 'Guardando producto...', success: <b>¡Producto guardado!</b>, error: <b>No se pudo guardar.</b>, });
     }
+    promise.then(() => onFormSubmit());
+  };
 
-    promise.then(() => {
-      onFormSubmit();
-    });
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const form = e.target.form;
+      const focusableElements = Array.from(form.elements).filter(el => !el.disabled);
+      const currentIndex = focusableElements.indexOf(e.target);
+      const nextElement = focusableElements[currentIndex + 1];
+      if (nextElement) {
+        nextElement.focus();
+      }
+    }
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <Input label="Nombre del Producto" name="name" value={formData.name} onChange={handleChange} />
+    <form onSubmit={handleSubmit} onKeyDown={handleKeyDown}>
+      <Input label="Nombre del Producto" name="name" value={formData.name} onChange={handleChange} autoFocus />
       <Input label="SKU / Código" name="sku" value={formData.sku} onChange={handleChange} />
       <Input label="Categoría" name="category" value={formData.category} onChange={handleChange} />
 
@@ -130,7 +108,10 @@ const ProductForm = ({ onFormSubmit, initialData }) => {
       </div>
 
       <div className="form-row">
-        <Input label="Precio de Costo" name="costPrice" type="number" value={formData.costPrice} onChange={handleChange} placeholder="Ej: 10.50" />
+        {/* --- 3. CAMBIO: Renderizado condicional del Precio de Costo --- */}
+        {hasPermission(PERMISSIONS.VIEW_COST_PRICE) && (
+          <Input label="Precio de Costo" name="costPrice" type="number" value={formData.costPrice} onChange={handleChange} placeholder="Ej: 10.50" />
+        )}
         <Input label="Precio de Venta" name="price" type="number" value={formData.price} onChange={handleChange} placeholder="Ej: 15.50" />
       </div>
 

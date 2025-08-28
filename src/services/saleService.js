@@ -5,19 +5,39 @@ import {
   onSnapshot, Timestamp, where, increment
 } from 'firebase/firestore';
 
-// Funciones de ayuda para obtener las referencias a las subcolecciones
+// Funciones de ayuda para obtener las referencias a las subcolecciones (sin cambios)
 const getSalesCollectionRef = (tenantId) => collection(db, 'tenants', tenantId, 'sales');
 const getMovementsCollectionRef = (tenantId) => collection(db, 'tenants', tenantId, 'movements');
 const getProductsCollectionRef = (tenantId) => collection(db, 'tenants', tenantId, 'products');
 const getClientsCollectionRef = (tenantId) => collection(db, 'tenants', tenantId, 'clients');
 
-// Procesa una venta (ya adaptado para recibir tenantId implícitamente en el futuro)
-export const processSale = async (tenantId, saleData, isCreditSale) => {
+
+// --- FUNCIÓN processSale MODIFICADA PARA AÑADIR paymentMethod ---
+// La firma de la función ahora incluye el parámetro 'paymentMethod'
+export const processSale = async (tenantId, saleData, isCreditSale, paymentMethod) => {
   const batch = writeBatch(db);
+
+  const itemsWithCost = saleData.items.map(item => ({
+    ...item,
+    costPrice: item.costPrice || 0
+  }));
+  
+  const totalCost = itemsWithCost.reduce((sum, item) => sum + (item.costPrice * item.quantity), 0);
+  const profit = saleData.total - totalCost;
+
   const saleRecord = {
-    items: saleData.items, total: saleData.total, client: saleData.client,
-    createdAt: serverTimestamp(), paymentStatus: isCreditSale ? 'pending' : 'paid',
+    items: itemsWithCost,
+    total: saleData.total,
+    totalCost: totalCost,
+    profit: profit,
+    client: saleData.client,
+    createdAt: serverTimestamp(),
+    paymentStatus: isCreditSale ? 'pending' : 'paid',
+    // --- LÍNEA MODIFICADA ---
+    // Se añade el método de pago. Si es a crédito, se guarda 'credit'.
+    paymentMethod: isCreditSale ? 'credit' : paymentMethod,
   };
+  
   const newSaleRef = doc(getSalesCollectionRef(tenantId));
   batch.set(newSaleRef, saleRecord);
 
@@ -43,7 +63,9 @@ export const processSale = async (tenantId, saleData, isCreditSale) => {
   await batch.commit();
 };
 
-// Obtiene todas las ventas
+
+// --- El resto de las funciones de lectura no tienen ningún cambio ---
+
 export const getSalesRealtime = (tenantId, callback, date = null) => {
   let q;
   if (date) {
@@ -65,7 +87,6 @@ export const getSalesRealtime = (tenantId, callback, date = null) => {
   });
 };
 
-// Obtiene las ventas de un cliente
 export const getClientSalesRealtime = (tenantId, clientId, callback) => {
   const q = query(
     getSalesCollectionRef(tenantId),
@@ -78,7 +99,6 @@ export const getClientSalesRealtime = (tenantId, clientId, callback) => {
   });
 };
 
-// Obtiene las ventas de hoy para el dashboard
 export const getTodaySalesRealtime = (tenantId, callback) => {
   const startOfToday = new Date();
   startOfToday.setHours(0, 0, 0, 0);
@@ -90,7 +110,6 @@ export const getTodaySalesRealtime = (tenantId, callback) => {
   });
 };
 
-// Obtiene las ventas de la semana para el dashboard
 export const getWeekSalesRealtime = (tenantId, callback) => {
   const today = new Date();
   const dayOfWeek = today.getDay();
@@ -105,7 +124,6 @@ export const getWeekSalesRealtime = (tenantId, callback) => {
   });
 };
 
-// Obtiene las ventas del mes para el dashboard
 export const getMonthSalesRealtime = (tenantId, callback) => {
   const today = new Date();
   const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);

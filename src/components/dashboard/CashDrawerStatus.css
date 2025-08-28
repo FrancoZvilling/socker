@@ -1,0 +1,20 @@
+/* src/components/dashboard/CashDrawerStatus.css */
+.cash-drawer-card {
+  background-color: #ffffff; border-radius: 10px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  padding: 25px; display: flex; align-items: center; gap: 20px;
+  border-left: 5px solid gray;
+}
+.cash-drawer-card.loading { border-color: #cbd5e0; }
+.cash-drawer-card.closed { border-color: #e53e3e; }
+.cash-drawer-card.open { border-color: #38a169; }
+
+.cash-drawer-card .card-icon {
+  font-size: 2.5rem; color: #3182ce; background-color: #ebf8ff;
+  padding: 15px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+}
+.cash-drawer-card .card-content { display: flex; flex-direction: column; flex-grow: 1; }
+.cash-drawer-card .card-title { margin: 0 0 5px 0; font-size: 1rem; color: #718096; }
+.cash-drawer-card .card-value { margin: 0; font-size: 1.5rem; font-weight: 700; }
+.cash-drawer-card .card-subtitle { font-size: 0.8rem; color: #a0aec0; margin-bottom: 15px; }
+.cash-drawer-card .btn { width: 100%; }

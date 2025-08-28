@@ -1,0 +1,51 @@
+/* src/components/ventas/PaymentMethodModal.css */
+.payment-modal-content {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+.payment-total {
+  text-align: center;
+  font-size: 1.2rem;
+}
+.payment-total strong {
+  display: block;
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #2f855a;
+  margin-top: 5px;
+}
+
+.payment-methods-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+}
+
+.method-button {
+  background-color: #f7fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #4a5568;
+}
+.method-button:hover {
+  border-color: #3182ce;
+  background-color: #ebf8ff;
+  color: #2c5282;
+}
+
+.method-button svg {
+  font-size: 2.5rem;
+  margin-bottom: 5px;
+}

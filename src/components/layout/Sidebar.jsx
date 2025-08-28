@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { logout } from '../../services/authService';
 import AuthModal from '../auth/AuthModal';
 import { useBusiness } from '../../context/BusinessContext';
+import { PERMISSIONS } from '../../config/permissions'; // Se importa la configuración de permisos
 import {
   FiHome, FiBox, FiShoppingCart, FiBarChart2,
   FiTruck, FiUsers, FiLogIn, FiLogOut
@@ -13,54 +14,70 @@ import {
 import './Sidebar.css';
 
 const Sidebar = () => {
-  const { currentUser, userData, isLoading } = useAuth();
+  // Se añade 'hasPermission' desde el hook de autenticación
+  const { currentUser, isLoading, hasPermission } = useAuth();
   const { businessData, isLoading: isBusinessLoading } = useBusiness();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  
-  // Por ahora, el nombre del negocio será estático, luego lo haremos dinámico.
-  const businessName = "Mi Negocio"; 
 
   const handleLogout = async () => {
     try {
       await logout();
-      // El AuthContext se encargará de actualizar el estado de la aplicación.
     } catch (error) {
       console.error("Error al cerrar sesión:", error);
     }
   };
 
-  const tenantName = isBusinessLoading 
-    ? "Cargando..." 
+  const tenantName = isBusinessLoading
+    ? "Cargando..."
     : businessData?.name || "Stocker";
 
   return (
-    <> {/* Se usa un fragmento para que el Modal no esté dentro del <aside> */}
+    <>
       <aside className="sidebar">
         <div className="sidebar-header">
           <h3>{tenantName}</h3>
         </div>
-        <nav className="sidebar-nav">
-          <NavLink to="/" end>
-            <FiHome /> <span>Dashboard</span>
-          </NavLink>
-          <NavLink to="/inventario">
-            <FiBox /> <span>Inventario</span>
-          </NavLink>
-          <NavLink to="/ventas">
-            <FiShoppingCart /> <span>Ventas</span>
-          </NavLink>
-          <NavLink to="/reportes">
-            <FiBarChart2 /> <span>Reportes</span>
-          </NavLink>
-          <NavLink to="/proveedores">
-            <FiTruck /> <span>Proveedores</span>
-          </NavLink>
-          <NavLink to="/clientes">
-            <FiUsers /> <span>Clientes</span>
-          </NavLink>
-        </nav>
-        
-        {/* Sección inferior dinámica para la autenticación */}
+
+        {/* La navegación principal ahora solo se muestra si hay un usuario logueado */}
+        {currentUser && (
+          <nav className="sidebar-nav">
+            <NavLink to="/" end>
+              <FiHome /> <span>Dashboard</span>
+            </NavLink>
+
+            {/* Cada enlace se renderiza condicionalmente según los permisos del usuario */}
+            {hasPermission(PERMISSIONS.VIEW_INVENTORY) && (
+              <NavLink to="/inventario">
+                <FiBox /> <span>Inventario</span>
+              </NavLink>
+            )}
+
+            {hasPermission(PERMISSIONS.USE_POS) && (
+              <NavLink to="/ventas">
+                <FiShoppingCart /> <span>Ventas</span>
+              </NavLink>
+            )}
+
+            {hasPermission(PERMISSIONS.VIEW_REPORTS) && (
+              <NavLink to="/reportes">
+                <FiBarChart2 /> <span>Reportes</span>
+              </NavLink>
+            )}
+
+            {hasPermission(PERMISSIONS.MANAGE_SUPPLIERS) && (
+              <NavLink to="/proveedores">
+                <FiTruck /> <span>Proveedores</span>
+              </NavLink>
+            )}
+
+            {hasPermission(PERMISSIONS.MANAGE_CLIENTS) && (
+              <NavLink to="/clientes">
+                <FiUsers /> <span>Clientes</span>
+              </NavLink>
+            )}
+          </nav>
+        )}
+
         <div className="sidebar-footer">
           {isLoading ? (
             <div className="user-info loading">Cargando...</div>
@@ -80,7 +97,6 @@ const Sidebar = () => {
         </div>
       </aside>
 
-      {/* El Modal se renderiza aquí, fuera del flujo visual del sidebar */}
       {isAuthModalOpen && (
         <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
       )}

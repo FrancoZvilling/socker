@@ -1,4 +1,5 @@
 /* src/components/reportes/SaleDetailsModal.css */
+
 .sale-details-content {
   display: flex;
   flex-direction: column;
@@ -34,20 +35,45 @@
 
 .details-table td:nth-child(2), /* Cantidad */
 .details-table td:nth-child(3), /* Precio Unit. */
-.details-table td:nth-child(4) { /* Subtotal */
+.details-table td:nth-child(4), /* P. Costo (ahora el 4to) */
+.details-table td:nth-child(5) { /* Subtotal (ahora el 5to) */
   text-align: right;
 }
 
+/* --- SECCIÓN MODIFICADA --- */
 .sale-total-footer {
   display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 20px;
+  justify-content: space-between; /* Alinea los bloques a cada extremo */
+  align-items: flex-end;         /* Alinea verticalmente en la parte inferior */
   margin-top: 20px;
+}
+
+.sale-total-footer > div {
+  display: flex;
+  flex-direction: column;
+}
+
+.sale-total-footer > div:first-child { /* Bloque de Costo y Ganancia */
+  text-align: left;
+  font-size: 1rem;
+  color: #718096;
+  gap: 5px;
+}
+
+.sale-total-footer > div:last-child { /* Bloque del Total Venta */
+  text-align: right;
   font-size: 1.4rem;
   font-weight: bold;
 }
 
-.sale-total-footer span:last-child {
-  color: #2f855a; /* Un verde para el total */
+.sale-total-footer > div:last-child span:last-child {
+  color: #1a202c; /* Devolvemos el total a un color neutro/oscuro */
 }
+/* ------------------------- */
+
+/* --- NUEVA CLASE AÑADIDA --- */
+.profit-cell {
+  color: #2f855a;  /* Verde para la ganancia */
+  font-weight: bold;
+}
+
