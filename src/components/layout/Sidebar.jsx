@@ -6,7 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { logout } from '../../services/authService';
 import AuthModal from '../auth/AuthModal';
 import { useBusiness } from '../../context/BusinessContext';
-import { PERMISSIONS } from '../../config/permissions'; // Se importa la configuración de permisos
+import { PERMISSIONS } from '../../config/permissions';
 import {
   FiHome, FiBox, FiShoppingCart, FiBarChart2,
   FiTruck, FiUsers, FiLogIn, FiLogOut
@@ -14,7 +14,6 @@ import {
 import './Sidebar.css';
 
 const Sidebar = () => {
-  // Se añade 'hasPermission' desde el hook de autenticación
   const { currentUser, isLoading, hasPermission } = useAuth();
   const { businessData, isLoading: isBusinessLoading } = useBusiness();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -38,14 +37,12 @@ const Sidebar = () => {
           <h3>{tenantName}</h3>
         </div>
 
-        {/* La navegación principal ahora solo se muestra si hay un usuario logueado */}
         {currentUser && (
           <nav className="sidebar-nav">
             <NavLink to="/" end>
               <FiHome /> <span>Dashboard</span>
             </NavLink>
 
-            {/* Cada enlace se renderiza condicionalmente según los permisos del usuario */}
             {hasPermission(PERMISSIONS.VIEW_INVENTORY) && (
               <NavLink to="/inventario">
                 <FiBox /> <span>Inventario</span>
@@ -89,14 +86,18 @@ const Sidebar = () => {
               </button>
             </div>
           ) : (
+            // --- BLOQUE MODIFICADO ---
+            // Se cambia el texto para que solo diga "Iniciar Sesión"
             <button className="login-btn" onClick={() => setIsAuthModalOpen(true)}>
               <FiLogIn />
-              <span>Iniciar Sesión / Registrarse</span>
+              <span>Iniciar Sesión</span>
             </button>
+            // -------------------------
           )}
         </div>
       </aside>
 
+      {/* Este AuthModal ahora es solo para el Login */}
       {isAuthModalOpen && (
         <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
       )}

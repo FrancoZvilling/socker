@@ -1,0 +1,41 @@
+/* src/pages/LandingPage.css */
+.landing-page {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  padding: 40px;
+  text-align: center;
+}
+
+.landing-content {
+  max-width: 600px;
+}
+
+.landing-content h1 {
+  font-size: 3rem;
+  font-weight: 800;
+  margin-bottom: 15px;
+}
+
+.landing-content .subtitle {
+  font-size: 1.25rem;
+  color: #718096;
+  margin-bottom: 30px;
+}
+
+.landing-content .description {
+  font-size: 1rem;
+  color: #4a5568;
+  line-height: 1.6;
+  margin-bottom: 40px;
+}
+
+.landing-content .btn {
+  font-size: 1.1rem;
+  padding: 15px 30px;
+}
+
+.landing-content .btn span {
+  margin-right: 10px;
+}

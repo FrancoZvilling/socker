@@ -1,11 +1,12 @@
 // src/components/reportes/SalesTable.jsx
+
 import React from 'react';
-import { FiEye, FiPrinter } from 'react-icons/fi'; // Se añade el ícono de impresora
+// Se cambia el ícono de devolución por uno más representativo como FiRotateCcw
+import { FiEye, FiPrinter, FiRotateCcw } from 'react-icons/fi';
 import { formatCurrency } from '../../utils/formatters';
 import './SalesTable.css';
 
-// Se añade el nuevo prop 'onPrint'
-const SalesTable = ({ sales, onShowDetails, onPrint }) => {
+const SalesTable = ({ sales, onShowDetails, onPrint, onReturn }) => {
   if (sales.length === 0) {
     return <p>Aún no se han registrado ventas.</p>;
   }
@@ -31,7 +32,6 @@ const SalesTable = ({ sales, onShowDetails, onPrint }) => {
               <td>{formatCurrency(sale.total)}</td>
               <td>{formatCurrency(sale.totalCost || 0)}</td>
               <td className="profit-cell">{formatCurrency(sale.profit || 0)}</td>
-              {/* La celda ahora contiene dos botones */}
               <td className="actions-cell">
                 <button 
                   className="icon-button" 
@@ -40,7 +40,6 @@ const SalesTable = ({ sales, onShowDetails, onPrint }) => {
                 >
                   <FiEye />
                 </button>
-                {/* Se añade el nuevo botón para imprimir */}
                 <button 
                   className="icon-button" 
                   title="Imprimir Ticket" 
@@ -48,6 +47,24 @@ const SalesTable = ({ sales, onShowDetails, onPrint }) => {
                 >
                   <FiPrinter />
                 </button>
+                
+                {/* --- Lógica Condicional Implementada --- */}
+                {/* Si la venta tiene el estado 'completed', muestra una etiqueta. */}
+                {sale.returnStatus === 'completed' ? (
+                  <span className="status-returned" title="Esta venta ya tiene una devolución registrada">
+                    Devuelto
+                  </span>
+                ) : (
+                  // Si no, muestra el botón para iniciar la devolución.
+                  <button 
+                    className="icon-button" 
+                    title="Registrar Devolución" 
+                    onClick={() => onReturn(sale)}
+                  >
+                    <FiRotateCcw />
+                  </button>
+                )}
+                {/* ------------------------------------ */}
               </td>
             </tr>
           ))}

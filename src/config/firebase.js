@@ -1,11 +1,9 @@
 // src/config/firebase.js
-
 import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
-import { getAuth } from "firebase/auth"; // Se añade la importación para Authentication
+import { getFirestore, connectFirestoreEmulator } from "firebase/firestore";
+import { getAuth, connectAuthEmulator } from "firebase/auth";
+import { getFunctions, connectFunctionsEmulator } from "firebase/functions";
 
-// Tu configuración de Firebase, usando las variables de entorno
-// Se añade 'export' para que pueda ser importado por otros servicios si es necesario
 export const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -15,12 +13,11 @@ export const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
-// Inicializa Firebase
+// --- INICIALIZACIÓN CENTRALIZADA ---
 const app = initializeApp(firebaseConfig);
-export { app };
 
-// Exporta el servicio de Firestore (sin cambios)
+// Exportamos las instancias de los servicios
 export const db = getFirestore(app);
-
-// Exporta el servicio de Autenticación (nuevo)
 export const auth = getAuth(app);
+export const functions = getFunctions(app, 'southamerica-east1');
+

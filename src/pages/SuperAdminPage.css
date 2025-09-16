@@ -1,0 +1,11 @@
+.super-admin-page .page-header {
+  margin-bottom: 30px;
+}
+
+/* Para asegurar que los botones de acción tengan espacio */
+.super-admin-page .actions-cell {
+  display: flex;
+  gap: 10px;
+}
+
+.status-badge.approved { background-color: #4299E1; }

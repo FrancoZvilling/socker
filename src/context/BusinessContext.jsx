@@ -21,7 +21,6 @@ export const BusinessProvider = ({ children }) => {
 
     if (tenantId) {
       setIsLoading(true);
-      // Si tenemos un tenantId, nos suscribimos a los cambios de ese negocio
       const businessDocRef = doc(db, 'tenants', tenantId);
       unsubscribe = onSnapshot(businessDocRef, (docSnap) => {
         if (docSnap.exists()) {
@@ -33,22 +32,25 @@ export const BusinessProvider = ({ children }) => {
         setIsLoading(false);
       });
     } else {
-      // Si no hay tenantId (nadie logueado), reseteamos los datos
       setBusinessData(null);
       setIsLoading(false);
     }
 
-    // Limpiamos la suscripción al desmontar o si el tenantId cambia
     return () => {
       if (unsubscribe) {
         unsubscribe();
       }
     };
-  }, [userData]); // Este efecto depende de los datos del usuario
+  }, [userData]);
+
+  // Se añade la variable 'accountStatus' para una lectura más limpia.
+  const accountStatus = businessData?.status || null;
 
   const value = {
     businessData,
     isLoading,
+    // Se añade 'accountStatus' al objeto de valor que provee el contexto.
+    accountStatus,
   };
 
   return (

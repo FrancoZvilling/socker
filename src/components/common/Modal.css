@@ -50,6 +50,12 @@
   color: #1a202c;
 }
 
+.modal-body {
+  max-height: 60vh;
+  overflow-y: auto;
+  padding-right: 15px;
+}
+
 /* Animaciones sutiles */
 @keyframes fadeIn {
   from { opacity: 0; }

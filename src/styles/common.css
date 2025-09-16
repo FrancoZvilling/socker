@@ -12,3 +12,8 @@
   border-radius: 6px;
   font-size: 1rem;
 }
+
+.status-badge { padding: 4px 8px; border-radius: 12px; font-weight: bold; color: white; font-size: 0.8rem; }
+.status-badge.pending_approval { background-color: #dd6b20; } /* Naranja */
+.status-badge.active { background-color: #38a169; } /* Verde */
+.status-badge.suspended { background-color: #718096; } /* Gris */
