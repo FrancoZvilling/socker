@@ -4,108 +4,135 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { getProductsRealtime } from '../services/productService';
 import { getClientsRealtime } from '../services/clientService';
+import { getCombosRealtime } from '../services/comboService'; // Se importa el servicio de combos
 import { processSale } from '../services/saleService';
 import ProductGrid from '../components/ventas/ProductGrid';
 import Cart from '../components/ventas/Cart';
 import ClientSelectionModal from '../components/clientes/ClientSelectionModal';
-import PaymentMethodModal from '../components/ventas/PaymentMethodModal'; // Se añade la importación del nuevo modal
+import PaymentMethodModal from '../components/ventas/PaymentMethodModal';
 import { toast } from 'react-hot-toast';
 import Swal from 'sweetalert2';
 import { FiUserPlus } from 'react-icons/fi';
-import { formatCurrency } from '../utils/formatters'; // Se añade la importación del formateador
+import { formatCurrency } from '../utils/formatters';
 import './VentasPage.css';
 
 const VentasPage = () => {
-  const { userData } = useAuth();
+  const { userData, currentUser } = useAuth(); // Se añade currentUser por si se necesita
   const tenantId = userData?.tenantId;
 
   const [products, setProducts] = useState([]);
+  const [combos, setCombos] = useState([]); // Nuevo estado para los combos
   const [clients, setClients] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [cart, setCart] = useState([]);
   const [selectedClient, setSelectedClient] = useState(null);
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
   const [posSearchTerm, setPosSearchTerm] = useState('');
-  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false); // Nuevo estado para el modal de pago
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
 
   useEffect(() => {
     if (!tenantId) return;
+
+    // Se suscribe a productos, combos y clientes
     const unsubscribeProducts = getProductsRealtime(tenantId, (fetchedProducts) => {
       setProducts(fetchedProducts);
+      // La carga termina cuando los productos (el catálogo principal) están listos
       setIsLoading(false);
     });
+    const unsubscribeCombos = getCombosRealtime(tenantId, setCombos);
     const unsubscribeClients = getClientsRealtime(tenantId, setClients);
+    
     return () => {
       unsubscribeProducts();
       unsubscribeClients();
+      unsubscribeCombos();
     };
   }, [tenantId]);
+  
+  // Se crea una lista unificada para el catálogo
+  const catalogItems = useMemo(() => {
+    // Se añade 'type' y una 'key' única para evitar colisiones
+    const formattedProducts = products.map(p => ({ ...p, type: 'product', key: `product-${p.id}` }));
+    const formattedCombos = combos.map(c => ({ ...c, type: 'combo', key: `combo-${c.id}` }));
+    return [...formattedProducts, ...formattedCombos];
+  }, [products, combos]);
 
-  const handleAddToCart = (productToAdd) => {
-    const existingItem = cart.find(item => item.id === productToAdd.id);
-    if (existingItem && existingItem.quantity >= productToAdd.stock) {
-      toast.error('No hay más stock disponible para este producto.'); return;
+
+  const filteredCatalog = useMemo(() => {
+    if (!posSearchTerm.trim()) return catalogItems;
+    const searchTermLower = posSearchTerm.toLowerCase();
+    return catalogItems.filter(item =>
+      item.name.toLowerCase().includes(searchTermLower) ||
+      (item.sku && item.sku.toLowerCase().includes(searchTermLower))
+    );
+  }, [catalogItems, posSearchTerm]);
+
+  const handleAddToCart = (itemToAdd) => {
+    const existingItem = cart.find(item => item.key === itemToAdd.key);
+    
+    if (itemToAdd.type === 'product') {
+      const stockAvailable = itemToAdd.stock || 0;
+      if (stockAvailable <= 0 && !existingItem) {
+        toast.error('Este producto no tiene stock disponible.'); return;
+      }
+      if (existingItem && existingItem.quantity >= stockAvailable) {
+        toast.error('No hay más stock disponible.'); return;
+      }
     }
-    if (!existingItem && productToAdd.stock <= 0) {
-      toast.error('Este producto no tiene stock disponible.'); return;
-    }
+    
     if (existingItem) {
       setCart(currentCart => currentCart.map(item =>
-        item.id === productToAdd.id ? { ...item, quantity: item.quantity + 1 } : item
+        item.key === itemToAdd.key ? { ...item, quantity: item.quantity + 1 } : item
       ));
     } else {
-      setCart(currentCart => [...currentCart, { ...productToAdd, quantity: 1 }]);
+      setCart(currentCart => [...currentCart, { ...itemToAdd, quantity: 1 }]);
     }
   };
-
-  const filteredProducts = useMemo(() => {
-    if (!posSearchTerm.trim()) return products;
-    const searchTermLower = posSearchTerm.toLowerCase();
-    return products.filter(product =>
-      product.name.toLowerCase().includes(searchTermLower) ||
-      (product.sku && product.sku.toLowerCase().includes(searchTermLower))
-    );
-  }, [products, posSearchTerm]);
-
+  
   const handleSearchKeyDown = (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      if (filteredProducts.length === 1) {
-        handleAddToCart(filteredProducts[0]);
+      if (filteredCatalog.length === 1) {
+        handleAddToCart(filteredCatalog[0]);
         setPosSearchTerm('');
-      } else if (filteredProducts.length > 1) {
+      } else if (filteredCatalog.length > 1) {
         toast('Hay múltiples coincidencias. Por favor, refine la búsqueda.');
       }
     }
   };
 
-  const handleUpdateQuantity = (productId, newQuantity) => {
-    const product = products.find(p => p.id === productId);
-    if (newQuantity > product.stock) {
-      toast.error('No hay más stock disponible.'); return;
+  const handleUpdateQuantity = (itemKey, newQuantity) => {
+    const itemInCart = cart.find(item => item.key === itemKey);
+    if (!itemInCart) return;
+
+    if (itemInCart.type === 'product') {
+      if (newQuantity > itemInCart.stock) {
+        toast.error('No hay más stock disponible.'); return;
+      }
     }
+
     if (newQuantity <= 0) {
-      setCart(cart.filter(item => item.id !== productId));
+      setCart(cart.filter(item => item.key !== itemKey));
     } else {
       setCart(cart.map(item =>
-        item.id === productId ? { ...item, quantity: newQuantity } : item
+        item.key === itemKey ? { ...item, quantity: newQuantity } : item
       ));
     }
   };
 
-  const handleRemoveFromCart = (productId) => setCart(cart.filter(item => item.id !== productId));
+  const handleRemoveFromCart = (itemKey) => setCart(cart.filter(item => item.key !== itemKey));
+
   const totalPrice = useMemo(() => cart.reduce((total, item) => total + item.price * item.quantity, 0), [cart]);
+
   const handleClearCart = () => {
     setCart([]);
     setSelectedClient(null);
   };
   
-  // La función handleCheckout ahora solo abre el modal de selección de pago
   const handleCheckout = () => {
     setIsPaymentModalOpen(true);
   };
 
-  // Nueva función que se llama desde el modal de pago y procesa la venta
   const handleProcessSale = (paymentMethod) => {
     setIsPaymentModalOpen(false);
     const saleData = {
@@ -130,7 +157,7 @@ const VentasPage = () => {
     };
     Swal.fire({
       title: 'Confirmar Venta a Crédito',
-      text: `Se añadirá un saldo de ${totalPrice.toFixed(2)} a la cuenta de ${selectedClient.name}. ¿Continuar?`,
+      text: `Se añadirá un saldo de ${formatCurrency(totalPrice)} a la cuenta de ${selectedClient.name}. ¿Continuar?`,
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#38a169',
@@ -139,7 +166,6 @@ const VentasPage = () => {
       cancelButtonText: 'Cancelar'
     }).then((result) => {
       if (result.isConfirmed) {
-        // Se pasa 'credit' como método de pago implícito
         const promise = processSale(tenantId, saleData, true, 'credit');
         toast.promise(promise, {
           loading: 'Registrando venta a crédito...',
@@ -156,7 +182,7 @@ const VentasPage = () => {
       <div className="catalog-column">
         <input
           type="text"
-          placeholder="Buscar producto por nombre o escanear código..."
+          placeholder="Buscar producto o combo..."
           className="search-input-pos"
           value={posSearchTerm}
           onChange={(e) => setPosSearchTerm(e.target.value)}
@@ -166,7 +192,7 @@ const VentasPage = () => {
         {isLoading ? (
           <p>Cargando catálogo...</p>
         ) : (
-          <ProductGrid products={filteredProducts} onAddToCart={handleAddToCart} />
+          <ProductGrid products={filteredCatalog} onAddToCart={handleAddToCart} />
         )}
       </div>
       
@@ -202,7 +228,6 @@ const VentasPage = () => {
         />
       )}
 
-      {/* Se renderiza el nuevo modal de pago */}
       {isPaymentModalOpen && (
         <PaymentMethodModal
           isOpen={isPaymentModalOpen}

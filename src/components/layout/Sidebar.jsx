@@ -9,7 +9,7 @@ import { useBusiness } from '../../context/BusinessContext';
 import { PERMISSIONS } from '../../config/permissions';
 import {
   FiHome, FiBox, FiShoppingCart, FiBarChart2,
-  FiTruck, FiUsers, FiLogIn, FiLogOut
+  FiTruck, FiUsers, FiLogIn, FiLogOut, FiGift // Se añade el ícono FiGift
 } from 'react-icons/fi';
 import './Sidebar.css';
 
@@ -46,6 +46,13 @@ const Sidebar = () => {
             {hasPermission(PERMISSIONS.VIEW_INVENTORY) && (
               <NavLink to="/inventario">
                 <FiBox /> <span>Inventario</span>
+              </NavLink>
+            )}
+            
+            {/* Se añade el nuevo enlace a Promociones */}
+            {hasPermission(PERMISSIONS.MANAGE_PRODUCTS) && (
+              <NavLink to="/promociones">
+                <FiGift /> <span>Promociones</span>
               </NavLink>
             )}
 
@@ -86,18 +93,14 @@ const Sidebar = () => {
               </button>
             </div>
           ) : (
-            // --- BLOQUE MODIFICADO ---
-            // Se cambia el texto para que solo diga "Iniciar Sesión"
             <button className="login-btn" onClick={() => setIsAuthModalOpen(true)}>
               <FiLogIn />
               <span>Iniciar Sesión</span>
             </button>
-            // -------------------------
           )}
         </div>
       </aside>
 
-      {/* Este AuthModal ahora es solo para el Login */}
       {isAuthModalOpen && (
         <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
       )}

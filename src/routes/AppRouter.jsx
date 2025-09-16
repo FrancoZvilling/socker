@@ -12,6 +12,7 @@ import ProveedoresPage from '../pages/ProveedoresPage';
 import ClientesPage from '../pages/ClientesPage';
 import SuperAdminPage from '../pages/SuperAdminPage';
 import FinalizarRegistroPage from '../pages/FinalizarRegistroPage';
+import PromocionesPage from '../pages/PromocionesPage';
 
 // Componentes de Rutas Protegidas
 import SuperAdminRoute from './SuperAdminRoute';
@@ -47,6 +48,10 @@ const router = createBrowserRouter([
       {
         path: 'clientes',
         element: <ClientesPage />
+      },
+      {
+        path: 'promociones',
+        element: <PromocionesPage />
       },
       // Nueva ruta para el panel de Super Admin, protegida por su guardia.
       {

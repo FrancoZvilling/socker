@@ -1,0 +1,46 @@
+/* src/components/promociones/ComboForm.css */
+.components-section { margin-top: 20px; }
+.components-section h4 { margin-bottom: 10px; }
+.components-list { margin-top: 15px; display: flex; flex-direction: column; gap: 10px; }
+.component-item { display: flex; align-items: center; justify-content: space-between; padding: 10px; background-color: #f7fafc; border-radius: 6px; }
+.component-item span { font-weight: 500; }
+.component-item .quantity-control { display: flex; align-items: center; gap: 5px; }
+.component-item .quantity-control input { width: 60px; text-align: center; }
+.remove-component-btn { background: none; border: none; cursor: pointer; color: #e53e3e; font-size: 1.2rem; }
+
+/* --- ESTILOS CORREGIDOS Y AÑADIDOS --- */
+.autocomplete-wrapper {
+  position: relative;
+}
+
+/* Le damos al input del autocompletado el mismo estilo que a nuestros Inputs reutilizables */
+.autocomplete-wrapper input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #cbd5e0;
+  border-radius: 6px;
+  font-size: 1rem;
+  box-sizing: border-box; /* Asegura que el padding no aumente el tamaño */
+}
+.autocomplete-wrapper input:focus {
+  outline: none;
+  border-color: #3182ce;
+  box-shadow: 0 0 0 1px #3182ce;
+}
+
+.autocomplete-results {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #ccc;
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+  max-height: 150px;
+  overflow-y: auto;
+  z-index: 1001;
+}
+
+.autocomplete-item { padding: 10px; cursor: pointer; }
+.autocomplete-item.highlighted { background-color: #f0f0f0; }
