@@ -3,6 +3,7 @@ import AppRouter from './routes/AppRouter';
 import { AuthProvider } from './context/AuthContext'; 
 import { BusinessProvider } from './context/BusinessContext';
 
+
 function App() {
   return (
     <AuthProvider>

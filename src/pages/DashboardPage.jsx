@@ -5,7 +5,8 @@ import { useAuth } from '../context/AuthContext';
 import {
   getTodaySalesRealtime,
   getWeekSalesRealtime,
-  getMonthSalesRealtime
+  getMonthSalesRealtime,
+  getSalesForLastNDays
 } from '../services/saleService';
 import { getLowStockProductsRealtime } from '../services/productService';
 import { 
@@ -14,10 +15,12 @@ import {
   closeCashDrawer, 
   getCashSalesForActiveSession 
 } from '../services/cashService';
+import { getSalesAnalytics, getMonthlySalesAnalytics } from '../services/analyticsService'; // Se añade la nueva función
 import DashboardCard from '../components/dashboard/DashboardCard';
 import CashDrawerStatus from '../components/dashboard/CashDrawerStatus';
 import OpenCashDrawerModal from '../components/caja/OpenCashDrawerModal';
 import CloseCashDrawerModal from '../components/caja/CloseCashDrawerModal';
+import ChartsCarousel from '../components/dashboard/ChartsCarousel';
 import { FiTrendingUp, FiPackage, FiCalendar, FiBarChart, FiDollarSign } from 'react-icons/fi';
 import { formatCurrency } from '../utils/formatters';
 import { toast } from 'react-hot-toast';
@@ -27,14 +30,17 @@ const DashboardPage = () => {
   const { userData, currentUser } = useAuth();
   const tenantId = userData?.tenantId;
 
-  // Estados para las tarjetas de métricas
+  // Estados para métricas y gráficos
   const [todaySales, setTodaySales] = useState([]);
   const [weekSales, setWeekSales] = useState([]);
   const [monthSales, setMonthSales] = useState([]);
   const [lowStockProducts, setLowStockProducts] = useState([]);
+  const [last7DaysSales, setLast7DaysSales] = useState([]);
+  const [topProducts, setTopProducts] = useState([]);
+  const [monthlySalesAnalytics, setMonthlySalesAnalytics] = useState([]); // Nuevo estado para el gráfico mensual
   const [isLoading, setIsLoading] = useState(true);
   
-  // Estados para la gestión de caja
+  // Estados para gestión de caja
   const [activeSession, setActiveSession] = useState(null);
   const [isCashLoading, setIsCashLoading] = useState(true);
   const [isOpeningModal, setIsOpeningModal] = useState(false);
@@ -53,21 +59,38 @@ const DashboardPage = () => {
       setActiveSession(session);
       setIsCashLoading(false);
     });
+    const unsubLast7Days = getSalesForLastNDays(tenantId, 7, setLast7DaysSales);
 
-    // Desactiva la carga principal una vez que todos los datos iniciales deberían haber llegado
+    // Llamadas únicas a las Cloud Functions para obtener analíticas
+    getSalesAnalytics(tenantId)
+      .then(result => {
+        setTopProducts(result.data.topProducts);
+      })
+      .catch(error => {
+        console.error("Error al obtener top productos:", error);
+      });
+    
+    getMonthlySalesAnalytics(tenantId)
+      .then(result => {
+        setMonthlySalesAnalytics(result.data.monthlySales);
+      })
+      .catch(error => {
+        console.error("Error al obtener ventas mensuales:", error);
+      });
+
     setTimeout(() => setIsLoading(false), 800);
 
     return () => {
-      // Limpieza de todas las suscripciones
       unsubToday();
       unsubWeek();
       unsubMonth();
       unsubLowStock();
       unsubSession();
+      unsubLast7Days();
     };
   }, [tenantId]);
 
-  // Handlers para la gestión de caja
+  // Handlers para la gestión de caja (sin cambios)
   const handleOpenCashDrawer = (openingAmount) => {
     const promise = openCashDrawer(tenantId, openingAmount, currentUser);
     toast.promise(promise, {
@@ -97,12 +120,36 @@ const DashboardPage = () => {
     promise.then(() => setIsClosingModal(false));
   };
 
-  // Cálculos para las tarjetas de métricas
+  // Cálculos para las tarjetas de métricas (sin cambios)
   const totalSalesToday = useMemo(() => todaySales.reduce((sum, sale) => sum + sale.total, 0), [todaySales]);
   const totalSalesWeek = useMemo(() => weekSales.reduce((sum, sale) => sum + sale.total, 0), [weekSales]);
   const totalSalesMonth = useMemo(() => monthSales.reduce((sum, sale) => sum + sale.total, 0), [monthSales]);
   const totalProfitMonth = useMemo(() => monthSales.reduce((sum, sale) => sum + (sale.profit || 0), 0), [monthSales]);
   const lowStockCount = lowStockProducts.length;
+
+  // Cálculo para procesar los datos para el gráfico semanal (sin cambios)
+  const weeklyChartData = useMemo(() => {
+    const days = {};
+    const labels = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const key = `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}`;
+      labels.push(key);
+      days[key] = 0;
+    }
+    last7DaysSales.forEach(sale => {
+      const saleDate = sale.createdAt.toDate();
+      const key = `${saleDate.getDate().toString().padStart(2, '0')}/${(saleDate.getMonth() + 1).toString().padStart(2, '0')}`;
+      if (days.hasOwnProperty(key)) {
+        days[key] += sale.total;
+      }
+    });
+    return {
+      labels: labels,
+      data: Object.values(days),
+    };
+  }, [last7DaysSales]);
 
   return (
     <div className="dashboard-page">
@@ -147,6 +194,14 @@ const DashboardPage = () => {
           value={lowStockCount}
           icon={<FiPackage />}
           isLoading={isLoading}
+        />
+      </div>
+      
+      <div className="charts-section">
+        <ChartsCarousel 
+          weeklyChartData={weeklyChartData}
+          topProductsData={topProducts}
+          monthlySalesData={monthlySalesAnalytics} // Se pasan los datos del nuevo gráfico
         />
       </div>
       

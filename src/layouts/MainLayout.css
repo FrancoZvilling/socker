@@ -10,6 +10,8 @@
   background-color: #f7fafc;
   /* Un fondo gris claro para el contenido */
   min-height: 100vh;
+  flex: 1;
+  overflow: hidden;
 }
 
 .status-overlay {

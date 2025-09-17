@@ -149,3 +149,27 @@ export const getMonthSalesRealtime = (tenantId, callback) => {
     callback(monthSales);
   });
 };
+
+// --- NUEVA FUNCIÓN PARA EL GRÁFICO SEMANAL ---
+export const getSalesForLastNDays = (tenantId, numberOfDays, callback) => {
+  // Calculamos la fecha de inicio (hoy menos 'numberOfDays')
+  const endDate = new Date();
+  const startDate = new Date();
+  startDate.setDate(endDate.getDate() - (numberOfDays - 1));
+  startDate.setHours(0, 0, 0, 0); // Inicio del primer día
+
+  const startTimestamp = Timestamp.fromDate(startDate);
+  
+  // La consulta busca ventas cuya fecha de creación sea mayor o igual a la fecha de inicio
+  const q = query(
+    getSalesCollectionRef(tenantId),
+    where("createdAt", ">=", startTimestamp),
+    orderBy("createdAt", "asc") // Las ordenamos de más viejas a más nuevas para el gráfico
+  );
+
+  // onSnapshot nos dará actualizaciones en tiempo real si una venta de hoy se registra
+  return onSnapshot(q, (snapshot) => {
+    const sales = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    callback(sales);
+  });
+};
