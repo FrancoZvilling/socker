@@ -27,7 +27,7 @@ const SaleDetailsModal = ({ sale, onClose }) => {
               <th>Producto</th>
               <th>Cant.</th>
               <th>P. Venta Unit.</th> 
-              <th>P. Costo Unit.</th> {/* <-- Nueva columna */}
+              <th>P. Costo Unit.</th>
               <th>Subtotal</th>
             </tr>
           </thead>
@@ -37,7 +37,7 @@ const SaleDetailsModal = ({ sale, onClose }) => {
                 <td>{item.name}</td>
                 <td>{item.quantity}</td>
                 <td>{formatCurrency(item.price)}</td>
-                <td>{formatCurrency(item.costPrice || 0)}</td> {/* <-- Nueva celda */}
+                <td>{formatCurrency(item.costPrice || 0)}</td>
                 <td>{formatCurrency(item.price * item.quantity)}</td>
               </tr>
             ))}

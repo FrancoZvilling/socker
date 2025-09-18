@@ -215,6 +215,86 @@ exports.getMonthlySalesAnalytics = onCall({ region: region }, async (request) =>
   }
 });
 
+/**
+ * Cloud Function (v2 onCall) para actualizar precios de productos en masa.
+ * Recibe un objeto con las instrucciones y aplica los cambios de forma segura.
+ */
+exports.updatePricesBulk = onCall({ region: region, timeoutSeconds: 300 }, async (request) => {
+  // 1. Verificación de seguridad: solo un admin puede ejecutar esta acción.
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "La función debe ser llamada por un usuario autenticado.");
+  }
+  const { tenantId } = request.data;
+  const callerUserRef = db.collection("users").doc(request.auth.uid);
+  const callerUserSnap = await callerUserRef.get();
+  if (!callerUserSnap.exists || callerUserSnap.data().role !== "admin" || callerUserSnap.data().tenantId !== tenantId) {
+    throw new HttpsError("permission-denied", "Solo un administrador de este negocio puede modificar precios.");
+  }
+
+  // 2. Extraemos y validamos los parámetros de la solicitud.
+  const { percentage, operation, targetPrices, category, supplierId } = request.data;
+  if (!percentage || !operation || !targetPrices) {
+    throw new HttpsError("invalid-argument", "Faltan parámetros (porcentaje, operación o precios objetivo).");
+  }
+
+  // 3. Construimos la consulta a Firestore de forma dinámica.
+  let productsQuery = db.collection(`tenants/${tenantId}/products`);
+  
+  if (category) {
+    productsQuery = productsQuery.where('category', '==', category);
+  }
+  if (supplierId) {
+    productsQuery = productsQuery.where('supplierId', '==', supplierId);
+  }
+
+  try {
+    // 4. Obtenemos todos los productos que coinciden con los filtros.
+    const snapshot = await productsQuery.get();
+    if (snapshot.empty) {
+      console.log("No se encontraron productos que coincidan con los filtros.");
+      return { status: "success", message: "No se encontraron productos para actualizar." };
+    }
+
+    // 5. Preparamos una escritura por lotes.
+    const batch = db.batch();
+    const multiplier = operation === 'increase'
+      ? 1 + (percentage / 100)
+      : 1 - (percentage / 100);
+
+    snapshot.forEach(doc => {
+      const product = doc.data();
+      const updates = {};
+
+      // 6. Calculamos los nuevos precios según el objetivo.
+      if (targetPrices === 'sale' || targetPrices === 'both') {
+        const newPrice = (product.price || 0) * multiplier;
+        updates.price = parseFloat(newPrice.toFixed(2)); // Redondeamos a 2 decimales
+      }
+      if (targetPrices === 'cost' || targetPrices === 'both') {
+        const newCostPrice = (product.costPrice || 0) * multiplier;
+        updates.costPrice = parseFloat(newCostPrice.toFixed(2));
+      }
+      
+      // Añadimos la operación de actualización al lote.
+      if (Object.keys(updates).length > 0) {
+        batch.update(doc.ref, updates);
+      }
+    });
+
+    // 7. Ejecutamos todas las actualizaciones de una sola vez.
+    await batch.commit();
+
+    return {
+      status: "success",
+      message: `Se actualizaron los precios de ${snapshot.size} productos.`,
+    };
+  } catch (error) {
+    console.error("Error al actualizar precios en masa:", error);
+    // Este error probablemente indicará que falta un índice compuesto.
+    throw new HttpsError("internal", error.message);
+  }
+});
+
 
 
 

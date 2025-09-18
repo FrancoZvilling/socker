@@ -12,22 +12,25 @@ import Swal from 'sweetalert2';
 import { getProductsRealtime, deleteProduct } from '../services/productService';
 import { getSuppliersRealtime } from '../services/supplierService';
 import { registerPurchase } from '../services/purchaseService';
+import { updatePricesBulk } from '../services/priceModifierService'; // Se importa el nuevo servicio
 
 // Componentes
 import ProductTable from '../components/inventario/ProductTable';
 import ProductForm from '../components/inventario/ProductForm';
 import ProductHistoryModal from '../components/inventario/ProductHistoryModal';
 import RegisterPurchaseModal from '../components/compras/RegisterPurchaseModal';
+import LoadingOverlay from '../components/common/LoadingOverlay'; // Se importa el overlay de carga
+import PriceModifierModal from '../components/inventario/PriceModifierModal'; // Se importa el nuevo modal
 
 // Estilos
 import './InventarioPage.css';
-import '../styles/common.css'; // Asegúrate de que los estilos comunes estén aquí
+import '../styles/common.css';
 
 const InventarioPage = () => {
   const { userData } = useAuth(); 
   const tenantId = userData?.tenantId;
 
-  // Estados
+  // Estados existentes
   const [products, setProducts] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -38,24 +41,24 @@ const InventarioPage = () => {
   const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
+  
+  // Nuevos estados para el modificador de precios
+  const [isModifierModalOpen, setIsModifierModalOpen] = useState(false);
+  const [isUpdatingPrices, setIsUpdatingPrices] = useState(false);
 
-  // Efecto para cargar datos iniciales
   useEffect(() => {
     if (!tenantId) return;
-
     const unsubscribeProducts = getProductsRealtime(tenantId, (fetchedProducts) => {
       setProducts(fetchedProducts);
       setIsLoading(false);
     });
     const unsubscribeSuppliers = getSuppliersRealtime(tenantId, setSuppliers);
-    
     return () => {
       unsubscribeProducts();
       unsubscribeSuppliers();
     };
   }, [tenantId]);
 
-  // Lógica de filtrado
   const filteredProducts = useMemo(() => {
     return products.filter(product => {
       const categoryMatch = selectedCategory ? product.category === selectedCategory : true;
@@ -67,24 +70,20 @@ const InventarioPage = () => {
 
   const uniqueCategories = useMemo(() => {
     if (!products) return [];
-    return [...new Set(products.map(p => p.category))];
+    return [...new Set(products.map(p => p.category).filter(Boolean))]; // Se añade .filter(Boolean) para ignorar categorías vacías
   }, [products]);
 
-  // Handlers para el modal de Producto
+  // Handlers existentes (sin cambios)
   const handleOpenProductModal = (product = null) => {
     setProductToEdit(product);
     setIsProductModalOpen(true);
   };
   const handleCloseProductModal = () => setIsProductModalOpen(false);
-
-  // Handlers para el modal de Historial
   const handleShowHistory = (product) => {
     setSelectedProductForHistory(product);
     setIsHistoryModalOpen(true);
   };
   const handleCloseHistoryModal = () => setIsHistoryModalOpen(false);
-
-  // Handler para el modal de Compras
   const handleRegisterPurchase = (purchaseData) => {
     const promise = registerPurchase(tenantId, purchaseData);
     toast.promise(promise, {
@@ -94,17 +93,11 @@ const InventarioPage = () => {
     });
     promise.then(() => setIsPurchaseModalOpen(false));
   };
-  
-  // Handler para eliminar un producto
   const handleDeleteProduct = (id) => {
     Swal.fire({
-      title: '¿Estás seguro?',
-      text: "Esta acción no se puede deshacer.",
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#d33',
-      confirmButtonText: 'Sí, ¡eliminar!',
-      cancelButtonText: 'Cancelar'
+      title: '¿Estás seguro?', text: "Esta acción no se puede deshacer.",
+      icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33',
+      confirmButtonText: 'Sí, ¡eliminar!', cancelButtonText: 'Cancelar'
     }).then((result) => {
       if (result.isConfirmed) {
         const promise = deleteProduct(tenantId, id);
@@ -117,17 +110,42 @@ const InventarioPage = () => {
     });
   };
 
+  // Nuevo handler para la modificación masiva de precios
+  const handleUpdatePrices = (modificationData) => {
+    setIsModifierModalOpen(false);
+    Swal.fire({
+      title: '¿Confirmar Operación Masiva?',
+      text: "Esta acción modificará los precios de múltiples productos y no se puede deshacer.",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, aplicar cambios',
+      cancelButtonText: 'Cancelar'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        setIsUpdatingPrices(true);
+        const promise = updatePricesBulk(tenantId, modificationData);
+        
+        toast.promise(promise, {
+          loading: 'Procesando... (esto puede tardar)',
+          success: (res) => <b>{res.data.message}</b>,
+          error: (err) => <b>Error: {err.message}</b>,
+        }).finally(() => {
+          setIsUpdatingPrices(false);
+        });
+      }
+    });
+  };
+
   return (
     <div className="inventory-page">
+      {isUpdatingPrices && <LoadingOverlay message="Actualizando precios..." />}
+      
       <header className="page-header">
         <h1>Inventario de Productos</h1>
         <div className="header-actions">
-          <Button onClick={() => setIsPurchaseModalOpen(true)}>
-            Registrar Compra
-          </Button>
-          <Button onClick={() => handleOpenProductModal()} icon={<FiPlus />}>
-            Agregar Producto
-          </Button>
+          <Button onClick={() => setIsModifierModalOpen(true)}>Modificador de Precios</Button>
+          <Button onClick={() => setIsPurchaseModalOpen(true)}>Registrar Compra</Button>
+          <Button onClick={() => handleOpenProductModal()} icon={<FiPlus />}>Agregar Producto</Button>
         </div>
       </header>
       
@@ -167,6 +185,16 @@ const InventarioPage = () => {
           suppliers={suppliers}
           products={products}
           onRegisterPurchase={handleRegisterPurchase}
+        />
+      )}
+
+      {isModifierModalOpen && (
+        <PriceModifierModal
+          isOpen={isModifierModalOpen}
+          onClose={() => setIsModifierModalOpen(false)}
+          onSubmit={handleUpdatePrices}
+          products={products}
+          suppliers={suppliers}
         />
       )}
     </div>
