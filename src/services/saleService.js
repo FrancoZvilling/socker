@@ -93,16 +93,35 @@ export const processSale = async (tenantId, saleData, isCreditSale, paymentMetho
 
 // --- EL RESTO DE LAS FUNCIONES NO HAN SIDO MODIFICADAS ---
 
-export const getSalesRealtime = (tenantId, callback, date = null) => {
+export const getSalesRealtime = (tenantId, callback, dateRange = { start: null, end: null }) => {
   let q;
-  if (date) {
-    const [year, month, day] = date.split('-').map(Number);
-    const startOfDay = new Date(year, month - 1, day);
-    const endOfDay = new Date(year, month - 1, day, 23, 59, 59, 999);
-    q = query(getSalesCollectionRef(tenantId), where("createdAt", ">=", Timestamp.fromDate(startOfDay)), where("createdAt", "<=", Timestamp.fromDate(endOfDay)), orderBy("createdAt", "desc"));
+  const { start, end } = dateRange;
+
+  if (start && end) {
+  
+
+    // 1. Creamos la fecha de inicio. La cadena 'YYYY-MM-DD' se interpreta
+    //    como la medianoche de ESE DÍA en la zona horaria local por el constructor de Date.
+    const startDate = new Date(start + 'T00:00:00'); // Forzamos la interpretación local
+
+    // 2. Creamos la fecha de fin.
+    const endDate = new Date(end + 'T23:59:59'); // Forzamos la interpretación local
+    
+    // 3. Convertimos a Timestamps de Firebase.
+    const startTimestamp = Timestamp.fromDate(startDate);
+    const endTimestamp = Timestamp.fromDate(endDate);
+    // ------------------------------------
+    
+    q = query(
+      getSalesCollectionRef(tenantId),
+      where("createdAt", ">=", startTimestamp),
+      where("createdAt", "<=", endTimestamp),
+      orderBy("createdAt", "desc")
+    );
   } else {
     q = query(getSalesCollectionRef(tenantId), orderBy("createdAt", "desc"));
   }
+  
   return onSnapshot(q, (snapshot) => {
     const sales = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     callback(sales);
