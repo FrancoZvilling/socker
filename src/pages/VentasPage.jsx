@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { getProductsRealtime } from '../services/productService';
 import { getClientsRealtime } from '../services/clientService';
-import { getCombosRealtime } from '../services/comboService'; // Se importa el servicio de combos
+import { getCombosRealtime } from '../services/comboService';
 import { processSale } from '../services/saleService';
 import ProductGrid from '../components/ventas/ProductGrid';
 import Cart from '../components/ventas/Cart';
@@ -17,11 +17,11 @@ import { formatCurrency } from '../utils/formatters';
 import './VentasPage.css';
 
 const VentasPage = () => {
-  const { userData, currentUser } = useAuth(); // Se añade currentUser por si se necesita
+  const { userData, currentUser } = useAuth();
   const tenantId = userData?.tenantId;
 
   const [products, setProducts] = useState([]);
-  const [combos, setCombos] = useState([]); // Nuevo estado para los combos
+  const [combos, setCombos] = useState([]);
   const [clients, setClients] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [cart, setCart] = useState([]);
@@ -33,10 +33,8 @@ const VentasPage = () => {
   useEffect(() => {
     if (!tenantId) return;
 
-    // Se suscribe a productos, combos y clientes
     const unsubscribeProducts = getProductsRealtime(tenantId, (fetchedProducts) => {
       setProducts(fetchedProducts);
-      // La carga termina cuando los productos (el catálogo principal) están listos
       setIsLoading(false);
     });
     const unsubscribeCombos = getCombosRealtime(tenantId, setCombos);
@@ -49,9 +47,7 @@ const VentasPage = () => {
     };
   }, [tenantId]);
   
-  // Se crea una lista unificada para el catálogo
   const catalogItems = useMemo(() => {
-    // Se añade 'type' y una 'key' única para evitar colisiones
     const formattedProducts = products.map(p => ({ ...p, type: 'product', key: `product-${p.id}` }));
     const formattedCombos = combos.map(c => ({ ...c, type: 'combo', key: `combo-${c.id}` }));
     return [...formattedProducts, ...formattedCombos];
@@ -69,20 +65,57 @@ const VentasPage = () => {
 
   const handleAddToCart = (itemToAdd) => {
     const existingItem = cart.find(item => item.key === itemToAdd.key);
-    
+    const newQuantity = (existingItem?.quantity || 0) + 1;
+
     if (itemToAdd.type === 'product') {
       const stockAvailable = itemToAdd.stock || 0;
-      if (stockAvailable <= 0 && !existingItem) {
-        toast.error('Este producto no tiene stock disponible.'); return;
+      if (newQuantity > stockAvailable) {
+        toast.error(`No hay suficiente stock para "${itemToAdd.name}". Disponible: ${stockAvailable}.`);
+        return;
       }
-      if (existingItem && existingItem.quantity >= stockAvailable) {
-        toast.error('No hay más stock disponible.'); return;
+    }
+
+    if (itemToAdd.type === 'combo') {
+      for (const component of itemToAdd.components) {
+        const productInStock = products.find(p => p.id === component.productId);
+        const stockAvailable = productInStock ? productInStock.stock : 0;
+        
+        let committedStock = 0;
+        cart.forEach(cartItem => {
+          if (cartItem.key === `product-${component.productId}`) {
+            committedStock += cartItem.quantity;
+          } else if (cartItem.type === 'combo' && cartItem.key !== itemToAdd.key) { // Excluir el combo que estamos añadiendo
+            cartItem.components.forEach(c => {
+              if (c.productId === component.productId) {
+                committedStock += c.quantity * cartItem.quantity;
+              }
+            });
+          }
+        });
+        
+        // El stock requerido es lo que ya está comprometido + lo que este combo necesita
+        const requiredByThisCombo = (existingItem ? existingItem.quantity : 0) + component.quantity;
+        const totalRequired = committedStock + requiredByThisCombo;
+
+        if(itemToAdd.key === existingItem?.key){
+          const requiredByThisCombo = component.quantity * newQuantity;
+           if (committedStock + requiredByThisCombo > stockAvailable) {
+             toast.error(`Stock insuficiente para "${component.productName}" al añadir otro combo. Disponible: ${stockAvailable}, Requerido: ${committedStock + requiredByThisCombo}.`);
+             return;
+           }
+        } else {
+          const requiredStock = committedStock + component.quantity;
+           if (requiredStock > stockAvailable) {
+             toast.error(`Stock insuficiente para "${component.productName}" en el combo. Disponible: ${stockAvailable}, Requerido: ${requiredStock}.`);
+             return;
+           }
+        }
       }
     }
     
     if (existingItem) {
       setCart(currentCart => currentCart.map(item =>
-        item.key === itemToAdd.key ? { ...item, quantity: item.quantity + 1 } : item
+        item.key === itemToAdd.key ? { ...item, quantity: newQuantity } : item
       ));
     } else {
       setCart(currentCart => [...currentCart, { ...itemToAdd, quantity: 1 }]);
