@@ -70,3 +70,31 @@ export const getCashSalesForActiveSession = async (tenantId, sessionStartDate) =
   });
   return totalCashSales;
 };
+
+// --- NUEVA FUNCIÓN PARA EL HISTORIAL ---
+export const getClosedCashSessions = (tenantId, dateRange, callback) => {
+  let q = query(
+    getCashSessionsCollectionRef(tenantId),
+    where("status", "==", "closed"), // Solo traemos las cerradas
+    orderBy("closedAt", "desc") // Las más recientes primero
+  );
+
+  // Si se provee un rango de fechas, añadimos los filtros
+  if (dateRange.start && dateRange.end) {
+    const startDate = new Date(dateRange.start + 'T00:00:00');
+    const endDate = new Date(dateRange.end + 'T23:59:59');
+    
+    q = query(
+      getCashSessionsCollectionRef(tenantId),
+      where("status", "==", "closed"),
+      where("closedAt", ">=", Timestamp.fromDate(startDate)),
+      where("closedAt", "<=", Timestamp.fromDate(endDate)),
+      orderBy("closedAt", "desc")
+    );
+  }
+
+  return onSnapshot(q, (snapshot) => {
+    const sessions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    callback(sessions);
+  });
+};

@@ -1,0 +1,22 @@
+/* src/components/dashboard/CashDrawerIndicator.css */
+.cash-indicator-link { text-decoration: none; }
+.cash-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: background-color 0.2s;
+}
+.cash-indicator.open { background-color: #c6f6d5; color: #22543d; }
+.cash-indicator.closed { background-color: #fed7d7; color: #822727; }
+.cash-indicator:hover { opacity: 0.8; }
+.indicator-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.cash-indicator.open .indicator-dot { background-color: #38a169; }
+.cash-indicator.closed .indicator-dot { background-color: #e53e3e; }

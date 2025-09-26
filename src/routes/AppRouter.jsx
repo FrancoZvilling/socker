@@ -13,6 +13,8 @@ import ClientesPage from '../pages/ClientesPage';
 import SuperAdminPage from '../pages/SuperAdminPage';
 import FinalizarRegistroPage from '../pages/FinalizarRegistroPage';
 import PromocionesPage from '../pages/PromocionesPage';
+import FinanzasPage from '../pages/FinanzasPage';
+import CajaPage from '../pages/CajaPage';
 
 // Componentes de Rutas Protegidas
 import SuperAdminRoute from './SuperAdminRoute';
@@ -64,7 +66,15 @@ const router = createBrowserRouter([
       },
       {
         path: '/finalizar-registro', // <-- NUEVA RUTA PÚBLICA
-        element: <FinalizarRegistroPage />,
+        element: <FinalizarRegistroPage />
+      },
+      { 
+        path: 'finanzas', 
+        element: <FinanzasPage /> 
+      },
+      { 
+        path: 'caja', 
+        element: <CajaPage /> 
       },
     ],
   },

@@ -9,25 +9,16 @@ import {
   getSalesForLastNDays
 } from '../services/saleService';
 import { getLowStockProductsRealtime } from '../services/productService';
-import { 
-  getActiveCashSessionRealtime, 
-  openCashDrawer, 
-  closeCashDrawer, 
-  getCashSalesForActiveSession 
-} from '../services/cashService';
-import { getSalesAnalytics, getMonthlySalesAnalytics } from '../services/analyticsService'; // Se añade la nueva función
+import { getSalesAnalytics, getMonthlySalesAnalytics } from '../services/analyticsService';
 import DashboardCard from '../components/dashboard/DashboardCard';
-import CashDrawerStatus from '../components/dashboard/CashDrawerStatus';
-import OpenCashDrawerModal from '../components/caja/OpenCashDrawerModal';
-import CloseCashDrawerModal from '../components/caja/CloseCashDrawerModal';
 import ChartsCarousel from '../components/dashboard/ChartsCarousel';
+import CashDrawerIndicator from '../components/dashboard/CashDrawerIndicator'; // Se importa el nuevo indicador
 import { FiTrendingUp, FiPackage, FiCalendar, FiBarChart, FiDollarSign } from 'react-icons/fi';
 import { formatCurrency } from '../utils/formatters';
-import { toast } from 'react-hot-toast';
 import './DashboardPage.css';
 
 const DashboardPage = () => {
-  const { userData, currentUser } = useAuth();
+  const { userData } = useAuth();
   const tenantId = userData?.tenantId;
 
   // Estados para métricas y gráficos
@@ -37,16 +28,9 @@ const DashboardPage = () => {
   const [lowStockProducts, setLowStockProducts] = useState([]);
   const [last7DaysSales, setLast7DaysSales] = useState([]);
   const [topProducts, setTopProducts] = useState([]);
-  const [monthlySalesAnalytics, setMonthlySalesAnalytics] = useState([]); // Nuevo estado para el gráfico mensual
+  const [monthlySalesAnalytics, setMonthlySalesAnalytics] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   
-  // Estados para gestión de caja
-  const [activeSession, setActiveSession] = useState(null);
-  const [isCashLoading, setIsCashLoading] = useState(true);
-  const [isOpeningModal, setIsOpeningModal] = useState(false);
-  const [isClosingModal, setIsClosingModal] = useState(false);
-  const [sessionDataForClosing, setSessionDataForClosing] = useState(null);
-
   useEffect(() => {
     if (!tenantId) return;
 
@@ -55,10 +39,6 @@ const DashboardPage = () => {
     const unsubWeek = getWeekSalesRealtime(tenantId, setWeekSales);
     const unsubMonth = getMonthSalesRealtime(tenantId, setMonthSales);
     const unsubLowStock = getLowStockProductsRealtime(tenantId, setLowStockProducts);
-    const unsubSession = getActiveCashSessionRealtime(tenantId, (session) => {
-      setActiveSession(session);
-      setIsCashLoading(false);
-    });
     const unsubLast7Days = getSalesForLastNDays(tenantId, 7, setLast7DaysSales);
 
     // Llamadas únicas a las Cloud Functions para obtener analíticas
@@ -85,49 +65,18 @@ const DashboardPage = () => {
       unsubWeek();
       unsubMonth();
       unsubLowStock();
-      unsubSession();
       unsubLast7Days();
     };
   }, [tenantId]);
 
-  // Handlers para la gestión de caja (sin cambios)
-  const handleOpenCashDrawer = (openingAmount) => {
-    const promise = openCashDrawer(tenantId, openingAmount, currentUser);
-    toast.promise(promise, {
-      loading: 'Abriendo caja...',
-      success: '¡Caja abierta con éxito!',
-      error: 'Hubo un error al abrir la caja.',
-    });
-    promise.then(() => setIsOpeningModal(false));
-  };
-
-  const handlePrepareCloseDrawer = async () => {
-    if (!activeSession) return;
-    const salesInCash = await getCashSalesForActiveSession(tenantId, activeSession.openedAt.toDate());
-    const expected = activeSession.openingAmount + salesInCash;
-    setSessionDataForClosing({ ...activeSession, totalSalesInCash: salesInCash, expectedInCash: expected });
-    setIsClosingModal(true);
-  };
-
-  const handleCloseCashDrawer = (countedAmount) => {
-    const { id, expectedInCash, totalSalesInCash } = sessionDataForClosing;
-    const promise = closeCashDrawer(tenantId, id, countedAmount, expectedInCash, totalSalesInCash, currentUser);
-    toast.promise(promise, {
-      loading: 'Cerrando y guardando sesión...',
-      success: '¡Caja cerrada con éxito!',
-      error: 'Hubo un error al cerrar la caja.',
-    });
-    promise.then(() => setIsClosingModal(false));
-  };
-
-  // Cálculos para las tarjetas de métricas (sin cambios)
+  // Cálculos para las tarjetas de métricas
   const totalSalesToday = useMemo(() => todaySales.reduce((sum, sale) => sum + sale.total, 0), [todaySales]);
   const totalSalesWeek = useMemo(() => weekSales.reduce((sum, sale) => sum + sale.total, 0), [weekSales]);
   const totalSalesMonth = useMemo(() => monthSales.reduce((sum, sale) => sum + sale.total, 0), [monthSales]);
   const totalProfitMonth = useMemo(() => monthSales.reduce((sum, sale) => sum + (sale.profit || 0), 0), [monthSales]);
   const lowStockCount = lowStockProducts.length;
 
-  // Cálculo para procesar los datos para el gráfico semanal (sin cambios)
+  // Cálculo para procesar los datos para el gráfico semanal
   const weeklyChartData = useMemo(() => {
     const days = {};
     const labels = [];
@@ -153,18 +102,12 @@ const DashboardPage = () => {
 
   return (
     <div className="dashboard-page">
-      <header className="page-header">
+      <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h1>Dashboard</h1>
+        <CashDrawerIndicator />
       </header>
       <div className="dashboard-grid">
-        <div className="cash-drawer-wrapper">
-          <CashDrawerStatus
-            activeSession={activeSession}
-            isLoading={isCashLoading}
-            onOpen={() => setIsOpeningModal(true)}
-            onClose={handlePrepareCloseDrawer}
-          />
-        </div>
+        {/* Ya no está el CashDrawerStatus aquí */}
         <DashboardCard
           title="Ventas de Hoy"
           value={formatCurrency(totalSalesToday)}
@@ -201,26 +144,9 @@ const DashboardPage = () => {
         <ChartsCarousel 
           weeklyChartData={weeklyChartData}
           topProductsData={topProducts}
-          monthlySalesData={monthlySalesAnalytics} // Se pasan los datos del nuevo gráfico
+          monthlySalesData={monthlySalesAnalytics}
         />
       </div>
-      
-      {isOpeningModal && (
-        <OpenCashDrawerModal
-          isOpen={isOpeningModal}
-          onClose={() => setIsOpeningModal(false)}
-          onOpen={handleOpenCashDrawer}
-        />
-      )}
-      
-      {isClosingModal && sessionDataForClosing && (
-        <CloseCashDrawerModal
-          isOpen={isClosingModal}
-          onClose={() => setIsClosingModal(false)}
-          onCloseDrawer={handleCloseCashDrawer}
-          sessionData={sessionDataForClosing}
-        />
-      )}
     </div>
   );
 };

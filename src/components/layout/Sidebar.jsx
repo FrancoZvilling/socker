@@ -9,7 +9,7 @@ import { useBusiness } from '../../context/BusinessContext';
 import { PERMISSIONS } from '../../config/permissions';
 import {
   FiHome, FiBox, FiShoppingCart, FiBarChart2,
-  FiTruck, FiUsers, FiLogIn, FiLogOut, FiGift // Se añade el ícono FiGift
+  FiTruck, FiUsers, FiLogIn, FiLogOut, FiGift, FiTrendingUp, FiArchive
 } from 'react-icons/fi';
 import './Sidebar.css';
 
@@ -48,7 +48,7 @@ const Sidebar = () => {
                 <FiBox /> <span>Inventario</span>
               </NavLink>
             )}
-            
+
             {/* Se añade el nuevo enlace a Promociones */}
             {hasPermission(PERMISSIONS.MANAGE_PRODUCTS) && (
               <NavLink to="/promociones">
@@ -79,6 +79,12 @@ const Sidebar = () => {
                 <FiUsers /> <span>Clientes</span>
               </NavLink>
             )}
+            <NavLink to="/finanzas">
+              <FiTrendingUp /> <span>Finanzas</span>
+            </NavLink>
+            <NavLink to="/caja">
+              <FiArchive /> <span>Caja</span>
+            </NavLink>
           </nav>
         )}
 
