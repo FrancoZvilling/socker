@@ -13,26 +13,6 @@ const region = 'southamerica-east1';
 
 console.log("El archivo index.js de Cloud Functions se está cargando (Sintaxis v2).");
 
-/**
- * Cloud Function (v2 onCall) para que un admin cree un nuevo usuario empleado.
- */
-exports.createEmployee = onCall({ region: region }, async (request) => {
-  if (!request.auth) { throw new HttpsError("unauthenticated", "La función debe ser llamada por un usuario autenticado."); }
-  const callerUserRef = db.collection("users").doc(request.auth.uid);
-  const callerUserSnap = await callerUserRef.get();
-  if (!callerUserSnap.exists || callerUserSnap.data().role !== "admin") { throw new HttpsError("permission-denied", "Solo un administrador puede crear nuevos usuarios."); }
-  const { email, password, role, tenantId } = request.data;
-  if (!email || !password || !role || !tenantId) { throw new HttpsError("invalid-argument", "Por favor, provea todos los datos necesarios."); }
-  try {
-    const userRecord = await auth.createUser({ email, password });
-    const newUserRef = db.collection("users").doc(userRecord.uid);
-    await newUserRef.set({ email, tenantId, role });
-    return { status: "success", message: `Usuario ${email} creado con éxito.`, uid: userRecord.uid };
-  } catch (error) {
-    console.error("Error al crear el usuario:", error);
-    throw new HttpsError("already-exists", error.message);
-  }
-});
 
 /**
  * Cloud Function (v2 onCall) para que un visitante solicite una nueva cuenta de negocio.

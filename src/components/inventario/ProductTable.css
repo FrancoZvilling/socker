@@ -96,3 +96,8 @@ tbody tr:hover {
 .row-out-of-stock:hover {
   background-color: #feb2b2 !important;
 }
+.icon-button:disabled {
+  color: #cbd5e0; /* Un gris claro para indicar que está inactivo */
+  cursor: not-allowed;
+  background-color: transparent !important;
+}

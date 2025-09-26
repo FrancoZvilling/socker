@@ -21,8 +21,6 @@ export const PERMISSIONS = {
   MANAGE_CLIENTS: 'manage_clients',
   MANAGE_CREDIT: 'manage_credit', // Ver y gestionar cuentas corrientes
 
-  // Administración del Negocio (futuro)
-  MANAGE_USERS: 'manage_users',
 };
 
 // Asignamos los permisos a cada rol.
@@ -39,4 +37,4 @@ const ROLES = {
   ],
 };
 
-export default ROLES;
+export default ROLES; 

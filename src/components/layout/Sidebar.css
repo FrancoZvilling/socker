@@ -1,57 +1,73 @@
+/* src/components/layout/Sidebar.css */
+
 .sidebar {
-      width: 250px;
-      box-sizing: border-box;
-      background-color: #1a202c; /* Un color oscuro para empezar */
-      color: white;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      padding: 20px;
-      position: fixed; /* Fijo en la pantalla */
-      top: 0;
-      left: 0;
-    }
+  width: 250px;
+  box-sizing: border-box;
+  background-color: #1a202c;
+  color: white;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  position: fixed;
+  top: 0;
+  left: 0;
+}
 
-    .sidebar-header {
-      margin-bottom: 30px;
-    }
+.sidebar-header {
+  margin-bottom: 30px;
+}
 
-    .sidebar-header h3 {
-      text-align: center;
-      font-size: 1.5rem;
-    }
+.sidebar-header h3 {
+  text-align: center;
+  font-size: 1.5rem;
+}
 
-    .sidebar-nav a {
-      display: flex;
-      align-items: center;
-      color: #a0aec0;
-      text-decoration: none;
-      padding: 12px 15px;
-      border-radius: 8px;
-      margin-bottom: 8px;
-      font-size: 1rem;
-      transition: background-color 0.2s, color 0.2s;
-    }
+.sidebar-nav {
+  /* Se añade overflow-y para permitir scroll si hay muchos enlaces */
+  overflow-y: auto; 
+}
 
-    .sidebar-nav a:hover {
-      background-color: #2d3748;
-      color: white;
-    }
+.sidebar-nav a {
+  display: flex;
+  align-items: center;
+  color: #a0aec0;
+  text-decoration: none;
+  padding: 12px 15px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  font-size: 1rem;
+  transition: background-color 0.2s, color 0.2s;
+}
 
-    .sidebar-nav a.active {
-      background-color: #4a5568; /* Color para el enlace activo */
-      color: white;
-      font-weight: bold;
-    }
+.sidebar-nav a:hover {
+  background-color: #2d3748;
+  color: white;
+}
 
-    .sidebar-nav a svg {
-      margin-right: 15px;
-      font-size: 1.2rem;
-    }
+.sidebar-nav a.active {
+  background-color: #4a5568;
+  color: white;
+  font-weight: bold;
+}
 
-    .sidebar-footer {
-  margin-top: auto; /* Empuja esta sección hacia el fondo */
-  padding-top: 20px;
+.sidebar-nav a svg {
+  margin-right: 15px;
+  font-size: 1.2rem;
+}
+
+/* --- NUEVOS ESTILOS PARA LA SECCIÓN DEL SWITCH --- */
+/* Esta sección ahora empuja el footer hacia abajo */
+.sidebar-switch-section {
+  margin-top: auto; 
+  padding-top: 15px;
+  
+}
+
+/* --- ESTILOS DEL FOOTER MODIFICADOS --- */
+/* El footer ya no necesita 'margin-top: auto' */
+.sidebar-footer {
+  padding-top: 15px;
   border-top: 1px solid #4a5568;
 }
 
@@ -66,7 +82,7 @@
   font-size: 0.8rem;
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis; /* Pone '...' si el email es muy largo */
+  text-overflow: ellipsis;
 }
 
 .user-info.loading {
@@ -101,3 +117,15 @@
 .login-btn:hover {
   background-color: #2d3748;
 }
+
+/* --- ESTILOS PARA ENLACES DESHABILITADOS (SIN CAMBIOS) --- */
+a.disabled-link {
+  color: #718096;
+  cursor: not-allowed; 
+  background-color: transparent !important;
+}
+
+a.disabled-link:hover {
+  color: #718096;
+}
+

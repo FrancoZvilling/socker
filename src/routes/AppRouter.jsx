@@ -1,6 +1,7 @@
 // src/routes/AppRouter.jsx
 
-import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
+
 
 // Layout y Páginas
 import MainLayout from '../layouts/MainLayout';
@@ -15,6 +16,7 @@ import FinalizarRegistroPage from '../pages/FinalizarRegistroPage';
 import PromocionesPage from '../pages/PromocionesPage';
 import FinanzasPage from '../pages/FinanzasPage';
 import CajaPage from '../pages/CajaPage';
+import ConfiguracionPage from '../pages/ConfiguracionPage';
 
 // Componentes de Rutas Protegidas
 import SuperAdminRoute from './SuperAdminRoute';
@@ -28,7 +30,11 @@ const router = createBrowserRouter([
     // Todas las páginas de la aplicación ahora son hijas de esta ruta raíz.
     children: [
       {
-        index: true, // Ruta por defecto: /
+        index: true, 
+        element: <Navigate to="/ventas" replace />,
+      },
+      {
+        path: 'dashboard',
         element: <DashboardPage />,
       },
       {
@@ -75,6 +81,10 @@ const router = createBrowserRouter([
       { 
         path: 'caja', 
         element: <CajaPage /> 
+      },
+      { 
+        path: 'configuracion', 
+        element: <ConfiguracionPage /> 
       },
     ],
   },

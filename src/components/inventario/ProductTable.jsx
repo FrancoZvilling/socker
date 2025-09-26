@@ -1,8 +1,8 @@
 // src/components/inventario/ProductTable.jsx
 
 import React from 'react';
-import { useAuth } from '../../context/AuthContext';
-import { PERMISSIONS } from '../../config/permissions';
+import { useAccess } from '../../context/AccessContext'; // Se importa el nuevo hook de acceso
+// La importación de PERMISSIONS ya no es necesaria
 import { FiEdit, FiTrash2, FiAlertTriangle, FiClock } from 'react-icons/fi';
 import { formatCurrency } from '../../utils/formatters';
 import './ProductTable.css';
@@ -28,7 +28,8 @@ const StockBadge = ({ stock, minStock }) => {
 };
 
 const ProductTable = ({ products, onEditProduct, onDeleteProduct, onShowHistory }) => {
-  const { hasPermission } = useAuth();
+  // Se obtiene la nueva función 'hasAdminAccess' del contexto
+  const { hasAdminAccess } = useAccess();
 
   if (products.length === 0) {
     return <p>No hay productos en el inventario. ¡Agrega el primero!</p>;
@@ -44,10 +45,12 @@ const ProductTable = ({ products, onEditProduct, onDeleteProduct, onShowHistory 
             <th>Categoría</th>
             <th>Proveedor</th>
             <th>Stock</th>
-            {/* Se añade la nueva cabecera, visible solo si se tiene el permiso */}
-            {hasPermission(PERMISSIONS.VIEW_COST_PRICE) && (
+            
+            {/* La cabecera "Precio Costo" solo se muestra en Modo Admin */}
+            {hasAdminAccess() && (
               <th>Precio Costo</th>
             )}
+            
             <th>Precio Venta</th>
             <th>Acciones</th>
           </tr>
@@ -70,8 +73,8 @@ const ProductTable = ({ products, onEditProduct, onDeleteProduct, onShowHistory 
                   <StockBadge stock={product.stock} minStock={product.minStock} />
                 </td>
                 
-                {/* Se añade la nueva celda para el precio de costo, visible solo si se tiene el permiso */}
-                {hasPermission(PERMISSIONS.VIEW_COST_PRICE) && (
+                {/* La celda de "Precio Costo" solo se muestra en Modo Admin */}
+                {hasAdminAccess() && (
                   <td>{formatCurrency(product.costPrice || 0)}</td>
                 )}
                 
@@ -85,25 +88,23 @@ const ProductTable = ({ products, onEditProduct, onDeleteProduct, onShowHistory 
                     <FiClock />
                   </button>
 
-                  {hasPermission(PERMISSIONS.MANAGE_PRODUCTS) && (
-                    // Usamos un Fragmento <> para agrupar los dos botones sin añadir un div extra
-                    <>
-                      <button
-                        className="icon-button"
-                        onClick={() => onEditProduct(product)}
-                        title="Editar Producto"
-                      >
-                        <FiEdit />
-                      </button>
-                      <button
-                        className="icon-button danger"
-                        onClick={() => onDeleteProduct(product.id)}
-                        title="Eliminar Producto"
-                      >
-                        <FiTrash2 />
-                      </button>
-                    </>
-                  )}
+                  {/* Los botones de Editar y Borrar se muestran, pero se deshabilitan en Modo Empleado */}
+                  <button
+                    className="icon-button"
+                    onClick={() => onEditProduct(product)}
+                    title={hasAdminAccess() ? "Editar Producto" : "Se requiere modo Administrador"}
+                    disabled={!hasAdminAccess()} // Se deshabilita el botón
+                  >
+                    <FiEdit />
+                  </button>
+                  <button
+                    className="icon-button danger"
+                    onClick={() => onDeleteProduct(product.id)}
+                    title={hasAdminAccess() ? "Eliminar Producto" : "Se requiere modo Administrador"}
+                    disabled={!hasAdminAccess()} // Se deshabilita el botón
+                  >
+                    <FiTrash2 />
+                  </button>
                 </td>
               </tr>
             );

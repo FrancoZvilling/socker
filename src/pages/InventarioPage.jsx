@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useAccess } from '../context/AccessContext'; // Se importa el nuevo hook de acceso
 import { FiPlus } from 'react-icons/fi';
 import Button from '../components/common/Button';
 import Modal from '../components/common/Modal';
@@ -12,15 +13,15 @@ import Swal from 'sweetalert2';
 import { getProductsRealtime, deleteProduct } from '../services/productService';
 import { getSuppliersRealtime } from '../services/supplierService';
 import { registerPurchase } from '../services/purchaseService';
-import { updatePricesBulk } from '../services/priceModifierService'; // Se importa el nuevo servicio
+import { updatePricesBulk } from '../services/priceModifierService';
 
 // Componentes
 import ProductTable from '../components/inventario/ProductTable';
 import ProductForm from '../components/inventario/ProductForm';
 import ProductHistoryModal from '../components/inventario/ProductHistoryModal';
 import RegisterPurchaseModal from '../components/compras/RegisterPurchaseModal';
-import LoadingOverlay from '../components/common/LoadingOverlay'; // Se importa el overlay de carga
-import PriceModifierModal from '../components/inventario/PriceModifierModal'; // Se importa el nuevo modal
+import LoadingOverlay from '../components/common/LoadingOverlay';
+import PriceModifierModal from '../components/inventario/PriceModifierModal';
 
 // Estilos
 import './InventarioPage.css';
@@ -28,6 +29,7 @@ import '../styles/common.css';
 
 const InventarioPage = () => {
   const { userData } = useAuth(); 
+  const { hasAdminAccess } = useAccess(); // Se obtiene la nueva función de permisos
   const tenantId = userData?.tenantId;
 
   // Estados existentes
@@ -70,7 +72,7 @@ const InventarioPage = () => {
 
   const uniqueCategories = useMemo(() => {
     if (!products) return [];
-    return [...new Set(products.map(p => p.category).filter(Boolean))]; // Se añade .filter(Boolean) para ignorar categorías vacías
+    return [...new Set(products.map(p => p.category).filter(Boolean))];
   }, [products]);
 
   // Handlers existentes (sin cambios)
@@ -110,7 +112,7 @@ const InventarioPage = () => {
     });
   };
 
-  // Nuevo handler para la modificación masiva de precios
+  // Nuevo handler para la modificación masiva de precios (sin cambios)
   const handleUpdatePrices = (modificationData) => {
     setIsModifierModalOpen(false);
     Swal.fire({
@@ -143,7 +145,10 @@ const InventarioPage = () => {
       <header className="page-header">
         <h1>Inventario de Productos</h1>
         <div className="header-actions">
-          <Button onClick={() => setIsModifierModalOpen(true)}>Modificador de Precios</Button>
+          {/* El botón "Modificador de Precios" ahora es condicional */}
+          {hasAdminAccess() && (
+            <Button onClick={() => setIsModifierModalOpen(true)}>Modificador de Precios</Button>
+          )}
           <Button onClick={() => setIsPurchaseModalOpen(true)}>Registrar Compra</Button>
           <Button onClick={() => handleOpenProductModal()} icon={<FiPlus />}>Agregar Producto</Button>
         </div>

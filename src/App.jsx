@@ -2,13 +2,16 @@
 import AppRouter from './routes/AppRouter';
 import { AuthProvider } from './context/AuthContext'; 
 import { BusinessProvider } from './context/BusinessContext';
+import { AccessProvider } from './context/AccessContext';
 
 
 function App() {
   return (
     <AuthProvider>
       <BusinessProvider> 
-        <AppRouter />
+        <AccessProvider>
+          <AppRouter />
+        </AccessProvider>
       </BusinessProvider>
     </AuthProvider>
   );
