@@ -170,7 +170,7 @@ const InventarioPage = () => {
 
       {isProductModalOpen && (
         <Modal isOpen={isProductModalOpen} onClose={handleCloseProductModal} title={productToEdit ? "Editar Producto" : "Agregar Nuevo Producto"}>
-          <ProductForm onFormSubmit={handleCloseProductModal} initialData={productToEdit} />
+          <ProductForm onFormSubmit={handleCloseProductModal} initialData={productToEdit} categories={uniqueCategories} />
         </Modal>
       )}
 

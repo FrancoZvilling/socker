@@ -1,6 +1,8 @@
+// src/components/inventario/ProductTable.jsx
+
 import React from 'react';
-import { useAuth } from '../../context/AuthContext'; // Se importa el hook de autenticación
-import { PERMISSIONS } from '../../config/permissions'; // Se importan los nombres de los permisos
+import { useAuth } from '../../context/AuthContext';
+import { PERMISSIONS } from '../../config/permissions';
 import { FiEdit, FiTrash2, FiAlertTriangle, FiClock } from 'react-icons/fi';
 import { formatCurrency } from '../../utils/formatters';
 import './ProductTable.css';
@@ -26,7 +28,7 @@ const StockBadge = ({ stock, minStock }) => {
 };
 
 const ProductTable = ({ products, onEditProduct, onDeleteProduct, onShowHistory }) => {
-  const { hasPermission } = useAuth(); // Se obtiene la función para verificar permisos
+  const { hasPermission } = useAuth();
 
   if (products.length === 0) {
     return <p>No hay productos en el inventario. ¡Agrega el primero!</p>;
@@ -42,6 +44,10 @@ const ProductTable = ({ products, onEditProduct, onDeleteProduct, onShowHistory 
             <th>Categoría</th>
             <th>Proveedor</th>
             <th>Stock</th>
+            {/* Se añade la nueva cabecera, visible solo si se tiene el permiso */}
+            {hasPermission(PERMISSIONS.VIEW_COST_PRICE) && (
+              <th>Precio Costo</th>
+            )}
             <th>Precio Venta</th>
             <th>Acciones</th>
           </tr>
@@ -63,9 +69,14 @@ const ProductTable = ({ products, onEditProduct, onDeleteProduct, onShowHistory 
                 <td>
                   <StockBadge stock={product.stock} minStock={product.minStock} />
                 </td>
+                
+                {/* Se añade la nueva celda para el precio de costo, visible solo si se tiene el permiso */}
+                {hasPermission(PERMISSIONS.VIEW_COST_PRICE) && (
+                  <td>{formatCurrency(product.costPrice || 0)}</td>
+                )}
+                
                 <td>{formatCurrency(product.price)}</td>
                 <td className="actions-cell">
-                  {/* El botón de historial es visible para todos los roles con acceso al inventario */}
                   <button
                     className="icon-button"
                     onClick={() => onShowHistory(product)}
@@ -74,24 +85,24 @@ const ProductTable = ({ products, onEditProduct, onDeleteProduct, onShowHistory 
                     <FiClock />
                   </button>
 
-                  {/* El botón de editar solo se renderiza si el usuario tiene el permiso */}
                   {hasPermission(PERMISSIONS.MANAGE_PRODUCTS) && (
-                    <button
-                      className="icon-button"
-                      onClick={() => onEditProduct(product)}
-                    >
-                      <FiEdit />
-                    </button>
-                  )}
-
-                  {/* El botón de eliminar solo se renderiza si el usuario tiene el permiso */}
-                  {hasPermission(PERMISSIONS.MANAGE_PRODUCTS) && (
-                    <button
-                      className="icon-button danger"
-                      onClick={() => onDeleteProduct(product.id)}
-                    >
-                      <FiTrash2 />
-                    </button>
+                    // Usamos un Fragmento <> para agrupar los dos botones sin añadir un div extra
+                    <>
+                      <button
+                        className="icon-button"
+                        onClick={() => onEditProduct(product)}
+                        title="Editar Producto"
+                      >
+                        <FiEdit />
+                      </button>
+                      <button
+                        className="icon-button danger"
+                        onClick={() => onDeleteProduct(product.id)}
+                        title="Eliminar Producto"
+                      >
+                        <FiTrash2 />
+                      </button>
+                    </>
                   )}
                 </td>
               </tr>

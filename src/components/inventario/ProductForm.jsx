@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { PERMISSIONS } from '../../config/permissions'; // <-- 1. Importa los permisos
+import { PERMISSIONS } from '../../config/permissions';
 import { addProduct, updateProduct, createMovement } from '../../services/productService';
 import { getSuppliersRealtime } from '../../services/supplierService';
 import Input from '../common/Input';
@@ -10,8 +10,9 @@ import Button from '../common/Button';
 import { toast } from 'react-hot-toast';
 import './ProductForm.css';
 
-const ProductForm = ({ onFormSubmit, initialData }) => {
-  const { userData, hasPermission } = useAuth(); // <-- 2. Obtiene 'hasPermission'
+// Se añade 'categories' a la lista de props que recibe el componente.
+const ProductForm = ({ onFormSubmit, initialData, categories }) => {
+  const { userData, hasPermission } = useAuth();
   const tenantId = userData?.tenantId;
 
   const [formData, setFormData] = useState({
@@ -90,7 +91,28 @@ const ProductForm = ({ onFormSubmit, initialData }) => {
     <form onSubmit={handleSubmit} onKeyDown={handleKeyDown}>
       <Input label="Nombre del Producto" name="name" value={formData.name} onChange={handleChange} autoFocus />
       <Input label="SKU / Código" name="sku" value={formData.sku} onChange={handleChange} />
-      <Input label="Categoría" name="category" value={formData.category} onChange={handleChange} />
+      
+      {/* --- SE REEMPLAZA EL INPUT DE CATEGORÍA POR UN INPUT CON DATALIST --- */}
+      <div className="input-group">
+        <label htmlFor="category">Categoría</label>
+        <input
+          id="category"
+          name="category"
+          type="text"
+          value={formData.category}
+          onChange={handleChange}
+          list="category-suggestions" // Se vincula al datalist
+          placeholder="Escribe o selecciona una categoría"
+          className="custom-input-style" // Se añade una clase para asegurar estilos consistentes
+        />
+        <datalist id="category-suggestions">
+          {/* Se mapean las categorías recibidas como props para crear las sugerencias */}
+          {(categories || []).map((cat, index) => (
+            <option key={index} value={cat} />
+          ))}
+        </datalist>
+      </div>
+      {/* ----------------------------------------------------------------- */}
 
       <div className="input-group">
         <label htmlFor="supplierId">Proveedor</label>
@@ -108,7 +130,6 @@ const ProductForm = ({ onFormSubmit, initialData }) => {
       </div>
 
       <div className="form-row">
-        {/* --- 3. CAMBIO: Renderizado condicional del Precio de Costo --- */}
         {hasPermission(PERMISSIONS.VIEW_COST_PRICE) && (
           <Input label="Precio de Costo" name="costPrice" type="number" value={formData.costPrice} onChange={handleChange} placeholder="Ej: 10.50" />
         )}

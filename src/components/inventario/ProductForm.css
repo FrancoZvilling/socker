@@ -11,3 +11,18 @@
   justify-content: flex-end; /* Alinea el botón a la derecha */
   
 }
+
+.custom-input-style {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #cbd5e0;
+  border-radius: 6px;
+  font-size: 1rem;
+  box-sizing: border-box;
+}
+
+.custom-input-style:focus {
+  outline: none;
+  border-color: #3182ce;
+  box-shadow: 0 0 0 1px #3182ce;
+}
