@@ -53,7 +53,7 @@ const Sidebar = () => {
 
             {/* Páginas Bloqueadas en Modo Empleado */}
             <NavLink 
-              to="/" 
+              to="dashboard" 
               end 
               className={!hasAdminAccess() ? 'disabled-link' : ''}
               onClick={handleProtectedLinkClick}
