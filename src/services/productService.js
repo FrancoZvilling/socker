@@ -67,3 +67,19 @@ export const getLowStockProductsRealtime = (tenantId, callback) => {
   });
   return unsubscribe;
 };
+
+// --- NUEVA FUNCIÓN PARA EL DASHBOARD ---
+export const getOutOfStockProductsRealtime = (tenantId, callback) => {
+  // Creamos una consulta que busca productos donde el campo 'stock' sea igual a 0.
+  const q = query(
+    getProductsCollectionRef(tenantId),
+    where("stock", "==", 0)
+  );
+
+  const unsubscribe = onSnapshot(q, (snapshot) => {
+    // No necesitamos los datos completos, solo la cantidad.
+    // Devolver el tamaño del snapshot es muy eficiente.
+    callback(snapshot.size);
+  });
+  return unsubscribe;
+};

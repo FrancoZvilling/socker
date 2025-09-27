@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useAccess } from '../context/AccessContext'; // Se importa el nuevo hook de acceso
+import { useAccess } from '../context/AccessContext';
 import { FiPlus } from 'react-icons/fi';
 import Button from '../components/common/Button';
 import Modal from '../components/common/Modal';
@@ -14,6 +14,7 @@ import { getProductsRealtime, deleteProduct } from '../services/productService';
 import { getSuppliersRealtime } from '../services/supplierService';
 import { registerPurchase } from '../services/purchaseService';
 import { updatePricesBulk } from '../services/priceModifierService';
+import { importProductsBulk } from '../services/importService';
 
 // Componentes
 import ProductTable from '../components/inventario/ProductTable';
@@ -22,6 +23,7 @@ import ProductHistoryModal from '../components/inventario/ProductHistoryModal';
 import RegisterPurchaseModal from '../components/compras/RegisterPurchaseModal';
 import LoadingOverlay from '../components/common/LoadingOverlay';
 import PriceModifierModal from '../components/inventario/PriceModifierModal';
+import ProductImportModal from '../components/inventario/ProductImportModal'; // Se corrige el nombre del componente
 
 // Estilos
 import './InventarioPage.css';
@@ -29,10 +31,10 @@ import '../styles/common.css';
 
 const InventarioPage = () => {
   const { userData } = useAuth(); 
-  const { hasAdminAccess } = useAccess(); // Se obtiene la nueva función de permisos
+  const { hasAdminAccess } = useAccess();
   const tenantId = userData?.tenantId;
 
-  // Estados existentes
+  // Estados
   const [products, setProducts] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -43,10 +45,10 @@ const InventarioPage = () => {
   const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
-  
-  // Nuevos estados para el modificador de precios
+  const [stockFilter, setStockFilter] = useState('all');
   const [isModifierModalOpen, setIsModifierModalOpen] = useState(false);
   const [isUpdatingPrices, setIsUpdatingPrices] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
   useEffect(() => {
     if (!tenantId) return;
@@ -66,16 +68,29 @@ const InventarioPage = () => {
       const categoryMatch = selectedCategory ? product.category === selectedCategory : true;
       const searchTermLower = searchTerm.toLowerCase();
       const searchMatch = product.name.toLowerCase().includes(searchTermLower) || (product.sku && product.sku.toLowerCase().includes(searchTermLower));
-      return categoryMatch && searchMatch;
+      
+      const stockStatusMatch = () => {
+        switch (stockFilter) {
+          case 'low':
+            return product.stock > 0 && product.stock <= (product.minStock || 0);
+          case 'out':
+            return product.stock <= 0;
+          case 'all':
+          default:
+            return true;
+        }
+      };
+      
+      return categoryMatch && searchMatch && stockStatusMatch();
     });
-  }, [products, searchTerm, selectedCategory]);
+  }, [products, searchTerm, selectedCategory, stockFilter]);
 
   const uniqueCategories = useMemo(() => {
     if (!products) return [];
     return [...new Set(products.map(p => p.category).filter(Boolean))];
   }, [products]);
 
-  // Handlers existentes (sin cambios)
+  // Handlers
   const handleOpenProductModal = (product = null) => {
     setProductToEdit(product);
     setIsProductModalOpen(true);
@@ -112,7 +127,6 @@ const InventarioPage = () => {
     });
   };
 
-  // Nuevo handler para la modificación masiva de precios (sin cambios)
   const handleUpdatePrices = (modificationData) => {
     setIsModifierModalOpen(false);
     Swal.fire({
@@ -138,72 +152,103 @@ const InventarioPage = () => {
     });
   };
 
-  return (
-    <div className="inventory-page">
-      {isUpdatingPrices && <LoadingOverlay message="Actualizando precios..." />}
-      
-      <header className="page-header">
-        <h1>Inventario de Productos</h1>
-        <div className="header-actions">
-          {/* El botón "Modificador de Precios" ahora es condicional */}
-          {hasAdminAccess() && (
-            <Button onClick={() => setIsModifierModalOpen(true)}>Modificador de Precios</Button>
-          )}
-          <Button onClick={() => setIsPurchaseModalOpen(true)}>Registrar Compra</Button>
-          <Button onClick={() => handleOpenProductModal()} icon={<FiPlus />}>Agregar Producto</Button>
-        </div>
-      </header>
-      
-      <div className="filters-container">
-        <input type="text" placeholder="Buscar por nombre o SKU..." className="search-input" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-        <select className="category-select" value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)}>
-          <option value="">Todas las categorías</option>
-          {uniqueCategories.map(category => <option key={category} value={category}>{category}</option>)}
-        </select>
+ const handleImportProducts = (productsToImport) => {
+    // Reemplaza el console.log
+    const promise = importProductsBulk(tenantId, productsToImport);
+    toast.promise(promise, {
+      loading: 'Importando productos... Esto puede tardar varios minutos.',
+      success: (res) => <b>{res.data.message}</b>,
+      error: (err) => <b>Error: {err.message}</b>,
+    });
+  };
+
+  
+
+ return (
+  <div className="inventory-page">
+    {isUpdatingPrices && <LoadingOverlay message="Actualizando precios..." />}
+    
+    <header className="page-header">
+      <h1>Inventario de Productos</h1>
+      <div className="header-actions">
+        {hasAdminAccess() && (
+          <Button onClick={() => setIsImportModalOpen(true)} type="secondary">Importar</Button>
+        )}
+        {hasAdminAccess() && (
+          <Button onClick={() => setIsModifierModalOpen(true)}>Modificador de Precios</Button>
+        )}
+        <Button onClick={() => setIsPurchaseModalOpen(true)}>Registrar Compra</Button>
+        <Button onClick={() => handleOpenProductModal()} icon={<FiPlus />}>Agregar Producto</Button>
       </div>
-
-      {isLoading ? (
-        <p>Cargando productos...</p>
-      ) : (
-        <ProductTable
-          products={filteredProducts}
-          onEditProduct={handleOpenProductModal}
-          onDeleteProduct={handleDeleteProduct}
-          onShowHistory={handleShowHistory}
-        />
-      )}
-
-      {isProductModalOpen && (
-        <Modal isOpen={isProductModalOpen} onClose={handleCloseProductModal} title={productToEdit ? "Editar Producto" : "Agregar Nuevo Producto"}>
-          <ProductForm onFormSubmit={handleCloseProductModal} initialData={productToEdit} categories={uniqueCategories} />
-        </Modal>
-      )}
-
-      {isHistoryModalOpen && (
-        <ProductHistoryModal product={selectedProductForHistory} onClose={handleCloseHistoryModal} />
-      )}
-
-      {isPurchaseModalOpen && (
-        <RegisterPurchaseModal
-          isOpen={isPurchaseModalOpen}
-          onClose={() => setIsPurchaseModalOpen(false)}
-          suppliers={suppliers}
-          products={products}
-          onRegisterPurchase={handleRegisterPurchase}
-        />
-      )}
-
-      {isModifierModalOpen && (
-        <PriceModifierModal
-          isOpen={isModifierModalOpen}
-          onClose={() => setIsModifierModalOpen(false)}
-          onSubmit={handleUpdatePrices}
-          products={products}
-          suppliers={suppliers}
-        />
-      )}
+    </header>
+    
+    <div className="filters-container">
+      <input type="text" placeholder="Buscar por nombre o SKU..." className="search-input" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+      <select className="category-select" value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)}>
+        <option value="">Todas las categorías</option>
+        {uniqueCategories.map(category => <option key={category} value={category}>{category}</option>)}
+      </select>
+      <select
+        className="category-select"
+        value={stockFilter}
+        onChange={(e) => setStockFilter(e.target.value)}
+      >
+        <option value="all">Todo el Stock</option>
+        <option value="low">Stock Bajo</option>
+        <option value="out">Sin Stock</option>
+      </select>
     </div>
-  );
+
+    {isLoading ? (
+      <p>Cargando productos...</p>
+    ) : (
+      <ProductTable
+        products={filteredProducts}
+        onEditProduct={handleOpenProductModal}
+        onDeleteProduct={handleDeleteProduct}
+        onShowHistory={handleShowHistory}
+      />
+    )}
+
+    {isProductModalOpen && (
+      <Modal isOpen={isProductModalOpen} onClose={handleCloseProductModal} title={productToEdit ? "Editar Producto" : "Agregar Nuevo Producto"}>
+        <ProductForm onFormSubmit={handleCloseProductModal} initialData={productToEdit} categories={uniqueCategories} />
+      </Modal>
+    )}
+
+    {isHistoryModalOpen && (
+      <ProductHistoryModal product={selectedProductForHistory} onClose={handleCloseHistoryModal} />
+    )}
+
+    {isPurchaseModalOpen && (
+      <RegisterPurchaseModal
+        isOpen={isPurchaseModalOpen}
+        onClose={() => setIsPurchaseModalOpen(false)}
+        suppliers={suppliers}
+        products={products}
+        onRegisterPurchase={handleRegisterPurchase}
+      />
+    )}
+
+    {isModifierModalOpen && (
+      <PriceModifierModal
+        isOpen={isModifierModalOpen}
+        onClose={() => setIsModifierModalOpen(false)}
+        onSubmit={handleUpdatePrices}
+        products={products}
+        suppliers={suppliers}
+      />
+    )}
+    
+    {isImportModalOpen && (
+      <ProductImportModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        onImport={handleImportProducts}
+      />
+    )}
+  </div>
+);
 };
 
 export default InventarioPage;

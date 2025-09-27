@@ -275,6 +275,65 @@ exports.updatePricesBulk = onCall({ region: region, timeoutSeconds: 300 }, async
   }
 });
 
+exports.importProductsBulk = onCall({ region: region, timeoutSeconds: 300 }, async (request) => {
+  // 1. Seguridad
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "La función debe ser llamada por un usuario autenticado.");
+  }
+  const { tenantId, productsToImport } = request.data;
+  const callerUserRef = db.collection("users").doc(request.auth.uid);
+  const callerUserSnap = await callerUserRef.get();
+  if (!callerUserSnap.exists || callerUserSnap.data().role !== "admin" || callerUserSnap.data().tenantId !== tenantId) {
+    throw new HttpsError("permission-denied", "Solo un administrador puede importar productos.");
+  }
+  
+  if (!Array.isArray(productsToImport) || productsToImport.length === 0) {
+    throw new HttpsError("invalid-argument", "No se proporcionaron productos para importar.");
+  }
+
+  // Obtenemos la referencia a la subcolección correcta
+  const productsCollectionRef = db.collection(`tenants/${tenantId}/products`);
+  
+  const batchSize = 400;
+  const batches = [];
+
+  for (let i = 0; i < productsToImport.length; i += batchSize) {
+    const batch = db.batch();
+    const chunk = productsToImport.slice(i, i + batchSize);
+    
+    chunk.forEach(product => {
+      // Usamos 'doc()' sin argumentos para que Firestore genere un ID automático
+      const newProductRef = productsCollectionRef.doc();
+      
+      const productData = {
+        name: product.name || 'Sin Nombre',
+        sku: product.sku || '',
+        category: product.category || '',
+        stock: Number(product.stock) || 0,
+        costPrice: Number(product.costPrice) || 0,
+        price: Number(product.price) || 0,
+        minStock: Number(product.minStock) || 0,
+        supplierId: null,
+        supplierName: '',
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      };
+
+      batch.set(newProductRef, productData);
+    });
+    batches.push(batch.commit());
+  }
+
+  try {
+    await Promise.all(batches);
+    return {
+      status: "success",
+      message: `Se importaron ${productsToImport.length} productos con éxito.`,
+    };
+  } catch (error) {
+    console.error("Error al importar productos en masa:", error);
+    throw new HttpsError("internal", "Ocurrió un error durante la importación masiva.");
+  }
+});
 
 
 

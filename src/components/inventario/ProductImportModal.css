@@ -1,0 +1,6 @@
+/* src/components/inventario/ProductImportModal.css */
+.import-modal-content .step { margin-bottom: 25px; padding-bottom: 25px; border-bottom: 1px solid #e2e8f0; }
+.import-modal-content .step:last-child { border-bottom: none; margin-bottom: 0; }
+.import-modal-content h4 { margin: 0 0 10px; }
+.import-modal-content p { margin: 0 0 15px; color: #718096; }
+.error-message { color: #e53e3e; font-weight: bold; }

@@ -2,18 +2,23 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
+// --- LÍNEAS DE IMPORTACIÓN CORREGIDAS ---
 import {
   getTodaySalesRealtime,
   getWeekSalesRealtime,
   getMonthSalesRealtime,
   getSalesForLastNDays
 } from '../services/saleService';
-import { getLowStockProductsRealtime } from '../services/productService';
+import { 
+  getLowStockProductsRealtime,
+  getOutOfStockProductsRealtime // Esta función ahora se importa del lugar correcto
+} from '../services/productService';
+// --- FIN DE LA CORRECCIÓN ---
 import { getSalesAnalytics, getMonthlySalesAnalytics } from '../services/analyticsService';
 import DashboardCard from '../components/dashboard/DashboardCard';
 import ChartsCarousel from '../components/dashboard/ChartsCarousel';
-import CashDrawerIndicator from '../components/dashboard/CashDrawerIndicator'; // Se importa el nuevo indicador
-import { FiTrendingUp, FiPackage, FiCalendar, FiBarChart, FiDollarSign } from 'react-icons/fi';
+import CashDrawerIndicator from '../components/dashboard/CashDrawerIndicator';
+import { FiTrendingUp, FiPackage, FiCalendar, FiBarChart, FiDollarSign, FiSlash } from 'react-icons/fi';
 import { formatCurrency } from '../utils/formatters';
 import './DashboardPage.css';
 
@@ -26,6 +31,7 @@ const DashboardPage = () => {
   const [weekSales, setWeekSales] = useState([]);
   const [monthSales, setMonthSales] = useState([]);
   const [lowStockProducts, setLowStockProducts] = useState([]);
+  const [outOfStockCount, setOutOfStockCount] = useState(0);
   const [last7DaysSales, setLast7DaysSales] = useState([]);
   const [topProducts, setTopProducts] = useState([]);
   const [monthlySalesAnalytics, setMonthlySalesAnalytics] = useState([]);
@@ -39,6 +45,7 @@ const DashboardPage = () => {
     const unsubWeek = getWeekSalesRealtime(tenantId, setWeekSales);
     const unsubMonth = getMonthSalesRealtime(tenantId, setMonthSales);
     const unsubLowStock = getLowStockProductsRealtime(tenantId, setLowStockProducts);
+    const unsubOutOfStock = getOutOfStockProductsRealtime(tenantId, setOutOfStockCount);
     const unsubLast7Days = getSalesForLastNDays(tenantId, 7, setLast7DaysSales);
 
     // Llamadas únicas a las Cloud Functions para obtener analíticas
@@ -65,6 +72,7 @@ const DashboardPage = () => {
       unsubWeek();
       unsubMonth();
       unsubLowStock();
+      unsubOutOfStock();
       unsubLast7Days();
     };
   }, [tenantId]);
@@ -107,7 +115,6 @@ const DashboardPage = () => {
         <CashDrawerIndicator />
       </header>
       <div className="dashboard-grid">
-        {/* Ya no está el CashDrawerStatus aquí */}
         <DashboardCard
           title="Ventas de Hoy"
           value={formatCurrency(totalSalesToday)}
@@ -136,6 +143,12 @@ const DashboardPage = () => {
           title="Productos con Stock Bajo"
           value={lowStockCount}
           icon={<FiPackage />}
+          isLoading={isLoading}
+        />
+        <DashboardCard
+          title="Productos sin Stock"
+          value={outOfStockCount}
+          icon={<FiSlash />}
           isLoading={isLoading}
         />
       </div>
