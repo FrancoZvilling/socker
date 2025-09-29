@@ -38,3 +38,25 @@
   font-size: 1.2rem;
   color: #a0aec0;
 }
+
+.card-value {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 700;
+  /* El color por defecto ahora es el de texto normal */
+  color: #1a202c; 
+}
+
+/* --- NUEVAS CLASES DE COLOR --- */
+.card-value.positive {
+  color: #38a169; /* Verde */
+}
+
+.card-value.danger {
+  color: #e53e3e; /* Rojo */
+}
+
+.card-value.loading {
+  font-size: 1.2rem;
+  color: #a0aec0;
+}

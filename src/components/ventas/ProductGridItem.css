@@ -32,3 +32,27 @@
   font-size: 1.1rem;
   margin-top: 10px;
 }
+
+/* Estilo para el nombre del producto con stock bajo */
+.product-card-name.status-low {
+  color: #dd6b20; /* Naranja */
+}
+
+/* Estilo para el nombre del producto sin stock */
+.product-card-name.status-out {
+  color: #e53e3e; /* Rojo */
+}
+
+/* Estilo para la tarjeta completa cuando está deshabilitada (sin stock) */
+.product-card.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: #f7fafc;
+  border-color: #e2e8f0;
+}
+
+/* Evita que el efecto hover se aplique a las tarjetas deshabilitadas */
+.product-card.disabled:hover {
+  transform: none;
+  box-shadow: none;
+}

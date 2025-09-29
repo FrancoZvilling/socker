@@ -2,7 +2,8 @@
 import React from 'react';
 import './DashboardCard.css';
 
-const DashboardCard = ({ title, value, icon, isLoading }) => {
+// --- 1. AÑADIMOS 'color' A LOS PROPS ---
+const DashboardCard = ({ title, value, icon, isLoading, color = 'default' }) => {
   return (
     <div className="dashboard-card">
       <div className="card-icon">{icon}</div>
@@ -11,7 +12,10 @@ const DashboardCard = ({ title, value, icon, isLoading }) => {
         {isLoading ? (
           <p className="card-value loading">Cargando...</p>
         ) : (
-          <p className="card-value">{value}</p>
+          // --- 2. APLICAMOS LA CLASE DE COLOR DINÁMICAMENTE ---
+          <p className={`card-value ${color}`}>
+            {value}
+          </p>
         )}
       </div>
     </div>

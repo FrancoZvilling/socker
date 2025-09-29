@@ -24,7 +24,7 @@
 }
 
 .sidebar-nav {
-  /* Se añade overflow-y para permitir scroll si hay muchos enlaces */
+  flex-grow: 1;
   overflow-y: auto; 
 }
 

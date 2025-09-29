@@ -7,4 +7,5 @@
   overflow-y: auto; /* Permite scroll si hay muchos productos */
   padding: 5px; /* Pequeño padding para que el scroll no pegue al borde */
   flex-grow: 1; /* Ocupa el espacio vertical disponible */
+  align-content: start;
 }

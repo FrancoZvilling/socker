@@ -120,36 +120,42 @@ const DashboardPage = () => {
           value={formatCurrency(totalSalesToday)}
           icon={<FiTrendingUp />}
           isLoading={isLoading}
+          color="positive"
         />
         <DashboardCard
           title="Ventas de la Semana"
           value={formatCurrency(totalSalesWeek)}
           icon={<FiCalendar />}
           isLoading={isLoading}
+          color="positive"
         />
         <DashboardCard
           title="Ventas del Mes"
           value={formatCurrency(totalSalesMonth)}
           icon={<FiBarChart />}
           isLoading={isLoading}
+          color="positive"
         />
         <DashboardCard
           title="Ganancia del Mes"
           value={formatCurrency(totalProfitMonth)}
           icon={<FiDollarSign />}
           isLoading={isLoading}
+          color="positive"
         />
         <DashboardCard
           title="Productos con Stock Bajo"
           value={lowStockCount}
           icon={<FiPackage />}
           isLoading={isLoading}
+          color="danger"
         />
         <DashboardCard
           title="Productos sin Stock"
           value={outOfStockCount}
           icon={<FiSlash />}
           isLoading={isLoading}
+          color="danger"
         />
       </div>
       
