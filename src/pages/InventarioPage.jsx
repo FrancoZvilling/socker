@@ -1,8 +1,7 @@
-// src/pages/InventarioPage.jsx
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useAccess } from '../context/AccessContext';
+import ReactPaginate from 'react-paginate'; // Se importa el componente de paginación
 import { FiPlus } from 'react-icons/fi';
 import Button from '../components/common/Button';
 import Modal from '../components/common/Modal';
@@ -23,7 +22,7 @@ import ProductHistoryModal from '../components/inventario/ProductHistoryModal';
 import RegisterPurchaseModal from '../components/compras/RegisterPurchaseModal';
 import LoadingOverlay from '../components/common/LoadingOverlay';
 import PriceModifierModal from '../components/inventario/PriceModifierModal';
-import ProductImportModal from '../components/inventario/ProductImportModal'; // Se corrige el nombre del componente
+import ProductImportModal from '../components/inventario/ProductImportModal';
 
 // Estilos
 import './InventarioPage.css';
@@ -49,6 +48,10 @@ const InventarioPage = () => {
   const [isModifierModalOpen, setIsModifierModalOpen] = useState(false);
   const [isUpdatingPrices, setIsUpdatingPrices] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+
+  // Nuevos estados para la paginación
+  const [currentPage, setCurrentPage] = useState(0);
+  const [pageSize, setPageSize] = useState(10);
 
   useEffect(() => {
     if (!tenantId) return;
@@ -90,7 +93,21 @@ const InventarioPage = () => {
     return [...new Set(products.map(p => p.category).filter(Boolean))];
   }, [products]);
 
-  // Handlers
+  // Lógica de paginación que actúa sobre los productos ya filtrados
+  const pageCount = Math.ceil(filteredProducts.length / pageSize);
+  const offset = currentPage * pageSize;
+  const currentProducts = filteredProducts.slice(offset, offset + pageSize);
+
+  const handlePageClick = ({ selected }) => {
+    setCurrentPage(selected);
+  };
+
+  const handlePageSizeChange = (e) => {
+    setPageSize(Number(e.target.value));
+    setCurrentPage(0); // Vuelve a la primera página al cambiar el tamaño
+  };
+
+  // Handlers (sin cambios en su lógica interna)
   const handleOpenProductModal = (product = null) => {
     setProductToEdit(product);
     setIsProductModalOpen(true);
@@ -153,7 +170,6 @@ const InventarioPage = () => {
   };
 
  const handleImportProducts = (productsToImport) => {
-    // Reemplaza el console.log
     const promise = importProductsBulk(tenantId, productsToImport);
     toast.promise(promise, {
       loading: 'Importando productos... Esto puede tardar varios minutos.',
@@ -161,8 +177,6 @@ const InventarioPage = () => {
       error: (err) => <b>Error: {err.message}</b>,
     });
   };
-
-  
 
  return (
   <div className="inventory-page">
@@ -202,12 +216,36 @@ const InventarioPage = () => {
     {isLoading ? (
       <p>Cargando productos...</p>
     ) : (
-      <ProductTable
-        products={filteredProducts}
-        onEditProduct={handleOpenProductModal}
-        onDeleteProduct={handleDeleteProduct}
-        onShowHistory={handleShowHistory}
-      />
+      <>
+        <ProductTable
+          products={currentProducts}
+          onEditProduct={handleOpenProductModal}
+          onDeleteProduct={handleDeleteProduct}
+          onShowHistory={handleShowHistory}
+        />
+        <div className="pagination-container">
+          <ReactPaginate
+            previousLabel={'< Anterior'}
+            nextLabel={'Siguiente >'}
+            breakLabel={'...'}
+            pageCount={pageCount}
+            marginPagesDisplayed={2}
+            pageRangeDisplayed={3}
+            onPageChange={handlePageClick}
+            containerClassName={'pagination'}
+            activeClassName={'active'}
+            forcePage={currentPage}
+          />
+          <div className="page-size-selector">
+            <select value={pageSize} onChange={handlePageSizeChange}>
+              <option value={10}>Mostrar 10</option>
+              <option value={25}>Mostrar 25</option>
+              <option value={50}>Mostrar 50</option>
+              <option value={100}>Mostrar 100</option>
+            </select>
+          </div>
+        </div>
+      </>
     )}
 
     {isProductModalOpen && (

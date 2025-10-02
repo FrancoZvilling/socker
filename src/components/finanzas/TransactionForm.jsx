@@ -8,19 +8,34 @@ const TransactionForm = ({ onFormSubmit, initialData }) => {
     description: '',
     amount: '',
     dueDate: '',
-    type: 'income', // Por defecto es un ingreso
+    type: 'income',
     status: 'pending',
   });
 
+  // --- useEffect MODIFICADO PARA SER MÁS ROBUSTO CON LAS FECHAS ---
   useEffect(() => {
     if (initialData) {
-      // Formateamos la fecha para el input type="date"
-      const formattedDate = initialData.dueDate.toDate().toISOString().split('T')[0];
+      let dateToFormat = initialData.dueDate;
+      
+      // Si 'dueDate' es un objeto Timestamp de Firebase, lo convertimos a un objeto Date de JavaScript.
+      if (dateToFormat && typeof dateToFormat.toDate === 'function') {
+        dateToFormat = dateToFormat.toDate();
+      }
+      
+      // Aseguramos que 'dateToFormat' sea un objeto Date válido antes de continuar.
+      // Si no lo es, dejamos la fecha vacía para evitar errores.
+      const isValidDate = dateToFormat instanceof Date && !isNaN(dateToFormat);
+      
+      const formattedDate = isValidDate 
+        ? new Date(dateToFormat).toISOString().split('T')[0] 
+        : '';
+      
       setFormData({ ...initialData, dueDate: formattedDate });
     } else {
       setFormData({ description: '', amount: '', dueDate: '', type: 'income', status: 'pending' });
     }
   }, [initialData]);
+  // -----------------------------------------------------------
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -28,8 +43,7 @@ const TransactionForm = ({ onFormSubmit, initialData }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Convertimos el monto a número antes de enviar
-    onFormSubmit({ ...formData, amount: parseFloat(formData.amount) });
+    onFormSubmit({ ...formData, amount: parseFloat(formData.amount) || 0 });
   };
 
   return (
@@ -50,4 +64,5 @@ const TransactionForm = ({ onFormSubmit, initialData }) => {
     </form>
   );
 };
+
 export default TransactionForm;

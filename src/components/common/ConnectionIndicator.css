@@ -1,0 +1,3 @@
+.connection-indicator { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 0.9rem; padding: 5px 10px; border-radius: 6px; }
+.connection-indicator.online { color: #38a169; background-color: #f0fff4; }
+.connection-indicator.offline { color: #c53030; background-color: #fff5f5; }

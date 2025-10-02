@@ -1,6 +1,5 @@
-// src/pages/VentasPage.jsx
-
 import React, { useState, useEffect, useMemo } from 'react';
+import ReactPaginate from 'react-paginate'; // Se importa el componente de paginación
 import { useAuth } from '../context/AuthContext';
 import { getProductsRealtime } from '../services/productService';
 import { getClientsRealtime } from '../services/clientService';
@@ -15,6 +14,7 @@ import Swal from 'sweetalert2';
 import { FiUserPlus } from 'react-icons/fi';
 import { formatCurrency } from '../utils/formatters';
 import './VentasPage.css';
+import './InventarioPage.css'; // Se importan los estilos de paginación
 
 const VentasPage = () => {
   const { userData, currentUser } = useAuth();
@@ -29,6 +29,10 @@ const VentasPage = () => {
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
   const [posSearchTerm, setPosSearchTerm] = useState('');
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+
+  // Nuevos estados para la paginación
+  const [currentPage, setCurrentPage] = useState(0);
+  const [pageSize, setPageSize] = useState(42);
 
   useEffect(() => {
     if (!tenantId) return;
@@ -62,6 +66,20 @@ const VentasPage = () => {
       (item.sku && item.sku.toLowerCase().includes(searchTermLower))
     );
   }, [catalogItems, posSearchTerm]);
+  
+  // Lógica para "cortar" el catálogo en páginas
+  const pageCount = Math.ceil(filteredCatalog.length / pageSize);
+  const offset = currentPage * pageSize;
+  const currentCatalogItems = filteredCatalog.slice(offset, offset + pageSize);
+
+  const handlePageClick = ({ selected }) => {
+    setCurrentPage(selected);
+  };
+  
+  const handlePageSizeChange = (e) => {
+    setPageSize(Number(e.target.value));
+    setCurrentPage(0); // Volver a la primera página
+  };
 
   const handleAddToCart = (itemToAdd) => {
     const existingItem = cart.find(item => item.key === itemToAdd.key);
@@ -84,7 +102,7 @@ const VentasPage = () => {
         cart.forEach(cartItem => {
           if (cartItem.key === `product-${component.productId}`) {
             committedStock += cartItem.quantity;
-          } else if (cartItem.type === 'combo' && cartItem.key !== itemToAdd.key) { // Excluir el combo que estamos añadiendo
+          } else if (cartItem.type === 'combo') {
             cartItem.components.forEach(c => {
               if (c.productId === component.productId) {
                 committedStock += c.quantity * cartItem.quantity;
@@ -93,22 +111,10 @@ const VentasPage = () => {
           }
         });
         
-        // El stock requerido es lo que ya está comprometido + lo que este combo necesita
-        const requiredByThisCombo = (existingItem ? existingItem.quantity : 0) + component.quantity;
-        const totalRequired = committedStock + requiredByThisCombo;
-
-        if(itemToAdd.key === existingItem?.key){
-          const requiredByThisCombo = component.quantity * newQuantity;
-           if (committedStock + requiredByThisCombo > stockAvailable) {
-             toast.error(`Stock insuficiente para "${component.productName}" al añadir otro combo. Disponible: ${stockAvailable}, Requerido: ${committedStock + requiredByThisCombo}.`);
-             return;
-           }
-        } else {
-          const requiredStock = committedStock + component.quantity;
-           if (requiredStock > stockAvailable) {
-             toast.error(`Stock insuficiente para "${component.productName}" en el combo. Disponible: ${stockAvailable}, Requerido: ${requiredStock}.`);
-             return;
-           }
+        const requiredStock = committedStock + component.quantity;
+        if (requiredStock > stockAvailable) {
+          toast.error(`Stock insuficiente para "${component.productName}" en el combo. Disponible: ${stockAvailable}, Requerido: ${requiredStock}.`);
+          return;
         }
       }
     }
@@ -225,7 +231,30 @@ const VentasPage = () => {
         {isLoading ? (
           <p>Cargando catálogo...</p>
         ) : (
-          <ProductGrid products={filteredCatalog} onAddToCart={handleAddToCart} />
+          <>
+            <ProductGrid products={currentCatalogItems} onAddToCart={handleAddToCart} />
+            <div className="pagination-container">
+              <ReactPaginate
+                previousLabel={'<'}
+                nextLabel={'>'}
+                breakLabel={'...'}
+                pageCount={pageCount}
+                marginPagesDisplayed={1}
+                pageRangeDisplayed={2}
+                onPageChange={handlePageClick}
+                containerClassName={'pagination'}
+                activeClassName={'active'}
+                forcePage={currentPage}
+              />
+              <div className="page-size-selector">
+                <select value={pageSize} onChange={handlePageSizeChange}>
+                  <option value={14}>Mostrar 14</option>
+                  <option value={28}>Mostrar 28</option>
+                  <option value={42}>Mostrar 42</option>
+                </select>
+              </div>
+            </div>
+          </>
         )}
       </div>
       

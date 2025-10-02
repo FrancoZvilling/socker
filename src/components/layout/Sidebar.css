@@ -129,3 +129,32 @@ a.disabled-link:hover {
   color: #718096;
 }
 
+.sidebar-logo {
+  display: block; /* Para poder centrarlo con margin */
+  width: 80%;      /* Ajusta el tamaño como prefieras */
+  max-width: 150px;
+  margin: 0 auto;  /* Centra la imagen horizontalmente */
+}
+
+.sidebar-connection-status {
+  padding: 10px 0;
+}
+
+.sidebar-bottom {
+  /* Este contenedor ahora es el responsable de empujarse hacia abajo */
+  margin-top: auto;
+}
+
+.sidebar-connection-status {
+  padding: 10px 0;
+}
+
+.sidebar-switch-section {
+  padding: 10px 0;
+  border-top: 1px solid #4a5568;
+}
+
+.sidebar-footer {
+  padding-top: 15px;
+  border-top: 1px solid #4a5568;
+}

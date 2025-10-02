@@ -1,5 +1,5 @@
 // src/services/saleService.js
-import { db, auth } from '../config/firebase';
+import { db } from '../config/firebase';
 import {
   collection,
   doc,
@@ -11,7 +11,9 @@ import {
   Timestamp,
   where,
   increment,
-  getDocs // Se añade 'getDocs' a la lista de importaciones
+  getDocs,
+  limit,
+  // Ya no necesitamos offset ni getCountFromServer
 } from 'firebase/firestore';
 
 const getSalesCollectionRef = (tenantId) => collection(db, 'tenants', tenantId, 'sales');
@@ -19,22 +21,15 @@ const getMovementsCollectionRef = (tenantId) => collection(db, 'tenants', tenant
 const getProductsCollectionRef = (tenantId) => collection(db, 'tenants', tenantId, 'products');
 const getClientsCollectionRef = (tenantId) => collection(db, 'tenants', tenantId, 'clients');
 
-// --- FUNCIÓN processSale MODIFICADA Y COMPLETA ---
 export const processSale = async (tenantId, saleData, isCreditSale, paymentMethod) => {
   const batch = writeBatch(db);
-
-  // 1. Obtenemos una 'foto' actual de todos los productos para tener sus precios de costo
   const productsSnapshot = await getDocs(getProductsCollectionRef(tenantId));
   const productsDataMap = new Map(productsSnapshot.docs.map(doc => [doc.id, doc.data()]));
-
-  // 2. Enriquecemos los items del carrito con el 'costPrice' correcto
   const itemsWithCost = saleData.items.map(item => {
     let calculatedCostPrice = 0;
     if (item.type === 'product') {
-      // Para un producto, su costo es el que ya tiene
       calculatedCostPrice = item.costPrice || 0;
     } else if (item.type === 'combo') {
-      // Para un combo, calculamos la suma de los costos de sus componentes
       calculatedCostPrice = item.components.reduce((sum, component) => {
         const productDetails = productsDataMap.get(component.productId);
         const componentCost = productDetails ? productDetails.costPrice || 0 : 0;
@@ -43,12 +38,8 @@ export const processSale = async (tenantId, saleData, isCreditSale, paymentMetho
     }
     return { ...item, costPrice: calculatedCostPrice };
   });
-
-  // 3. Calculamos los totales finales con los costos ya enriquecidos
   const totalCost = itemsWithCost.reduce((sum, item) => sum + (item.costPrice * item.quantity), 0);
   const profit = saleData.total - totalCost;
-
-  // 4. Creamos el registro de la venta con todos los datos correctos
   const saleRecord = {
     items: itemsWithCost,
     total: saleData.total,
@@ -61,8 +52,6 @@ export const processSale = async (tenantId, saleData, isCreditSale, paymentMetho
   };
   const newSaleRef = doc(getSalesCollectionRef(tenantId));
   batch.set(newSaleRef, saleRecord);
-
-  // 5. El resto de la lógica (ajuste de saldo y descuento de stock) se mantiene igual
   if (isCreditSale && saleData.client) {
     const clientRef = doc(getClientsCollectionRef(tenantId), saleData.client.id);
     batch.update(clientRef, { balance: increment(saleData.total) });
@@ -86,47 +75,11 @@ export const processSale = async (tenantId, saleData, isCreditSale, paymentMetho
       }
     }
   }
-
   await batch.commit();
 };
 
+// Se elimina 'getSalesPaginated' y se reemplaza con las dos funciones necesarias.
 
-// --- EL RESTO DE LAS FUNCIONES NO HAN SIDO MODIFICADAS ---
-
-export const getSalesRealtime = (tenantId, callback, dateRange = { start: null, end: null }) => {
-  let q;
-  const { start, end } = dateRange;
-
-  if (start && end) {
-  
-
-    // 1. Creamos la fecha de inicio. La cadena 'YYYY-MM-DD' se interpreta
-    //    como la medianoche de ESE DÍA en la zona horaria local por el constructor de Date.
-    const startDate = new Date(start + 'T00:00:00'); // Forzamos la interpretación local
-
-    // 2. Creamos la fecha de fin.
-    const endDate = new Date(end + 'T23:59:59'); // Forzamos la interpretación local
-    
-    // 3. Convertimos a Timestamps de Firebase.
-    const startTimestamp = Timestamp.fromDate(startDate);
-    const endTimestamp = Timestamp.fromDate(endDate);
-    // ------------------------------------
-    
-    q = query(
-      getSalesCollectionRef(tenantId),
-      where("createdAt", ">=", startTimestamp),
-      where("createdAt", "<=", endTimestamp),
-      orderBy("createdAt", "desc")
-    );
-  } else {
-    q = query(getSalesCollectionRef(tenantId), orderBy("createdAt", "desc"));
-  }
-  
-  return onSnapshot(q, (snapshot) => {
-    const sales = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    callback(sales);
-  });
-};
 export const getClientSalesRealtime = (tenantId, clientId, callback) => {
   const q = query(getSalesCollectionRef(tenantId), where("client.id", "==", clientId), orderBy("createdAt", "desc"));
   return onSnapshot(q, (snapshot) => {
@@ -134,16 +87,40 @@ export const getClientSalesRealtime = (tenantId, clientId, callback) => {
     callback(clientSales);
   });
 };
+
 export const getTodaySalesRealtime = (tenantId, callback) => {
   const startOfToday = new Date();
   startOfToday.setHours(0, 0, 0, 0);
   const startTimestamp = Timestamp.fromDate(startOfToday);
-  const q = query(getSalesCollectionRef(tenantId), where("createdAt", ">=", startTimestamp));
+  const q = query(
+    getSalesCollectionRef(tenantId),
+    where("createdAt", ">=", startTimestamp),
+    orderBy("createdAt", "desc") // Se añade el orden para consistencia
+  );
   return onSnapshot(q, (snapshot) => {
     const todaySales = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     callback(todaySales);
   });
 };
+
+// --- NUEVA FUNCIÓN PARA BÚSQUEDA POR RANGO ---
+export const getSalesByDateRange = async (tenantId, startDate, endDate) => {
+  const start = new Date(startDate + 'T00:00:00');
+  const end = new Date(endDate + 'T23:59:59');
+
+  const q = query(
+    getSalesCollectionRef(tenantId),
+    where("createdAt", ">=", Timestamp.fromDate(start)),
+    where("createdAt", "<=", Timestamp.fromDate(end)),
+    orderBy("createdAt", "desc")
+  );
+
+  const querySnapshot = await getDocs(q);
+  const sales = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  return sales;
+};
+
+
 export const getWeekSalesRealtime = (tenantId, callback) => {
   const today = new Date();
   const dayOfWeek = today.getDay();
@@ -157,6 +134,7 @@ export const getWeekSalesRealtime = (tenantId, callback) => {
     callback(weekSales);
   });
 };
+
 export const getMonthSalesRealtime = (tenantId, callback) => {
   const today = new Date();
   const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -169,24 +147,16 @@ export const getMonthSalesRealtime = (tenantId, callback) => {
   });
 };
 
-// --- NUEVA FUNCIÓN PARA EL GRÁFICO SEMANAL ---
 export const getSalesForLastNDays = (tenantId, numberOfDays, callback) => {
-  // Calculamos la fecha de inicio (hoy menos 'numberOfDays')
-  const endDate = new Date();
   const startDate = new Date();
-  startDate.setDate(endDate.getDate() - (numberOfDays - 1));
-  startDate.setHours(0, 0, 0, 0); // Inicio del primer día
-
+  startDate.setDate(startDate.getDate() - (numberOfDays - 1));
+  startDate.setHours(0, 0, 0, 0);
   const startTimestamp = Timestamp.fromDate(startDate);
-  
-  // La consulta busca ventas cuya fecha de creación sea mayor o igual a la fecha de inicio
   const q = query(
     getSalesCollectionRef(tenantId),
     where("createdAt", ">=", startTimestamp),
-    orderBy("createdAt", "asc") // Las ordenamos de más viejas a más nuevas para el gráfico
+    orderBy("createdAt", "asc")
   );
-
-  // onSnapshot nos dará actualizaciones en tiempo real si una venta de hoy se registra
   return onSnapshot(q, (snapshot) => {
     const sales = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     callback(sales);

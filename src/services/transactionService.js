@@ -41,11 +41,22 @@ export const getPendingTransactionsRealtime = (tenantId, callback) => {
   return unsubscribe;
 };
 
-// UPDATE: Actualizar una transacción (ej: para marcarla como completada)
+// --- FUNCIÓN 'updateTransaction' CORREGIDA ---
+// Ahora se asegura de convertir la fecha si es una cadena de texto.
 export const updateTransaction = (tenantId, id, dataToUpdate) => {
   const transactionDoc = doc(db, 'tenants', tenantId, 'transactions', id);
-  return updateDoc(transactionDoc, dataToUpdate);
+  
+  const finalData = { ...dataToUpdate };
+
+  // Si en los datos a actualizar viene 'dueDate' y es de tipo 'string',
+  // lo convertimos a un objeto Date para que Firebase lo guarde como Timestamp.
+  if (finalData.dueDate && typeof finalData.dueDate === 'string') {
+    finalData.dueDate = new Date(finalData.dueDate + 'T00:00:00');
+  }
+
+  return updateDoc(transactionDoc, finalData);
 };
+// ---------------------------------------------
 
 // DELETE: Eliminar una transacción
 export const deleteTransaction = (tenantId, id) => {
