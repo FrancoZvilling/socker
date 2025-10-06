@@ -64,3 +64,25 @@
   color: #38a169; /* Verde */
   font-weight: bold;
 }
+
+.debt-age-cell {
+  font-weight: bold;
+  color: #c53030; /* Rojo para destacar la antigüedad de la deuda */
+  text-align: center;
+}
+
+.debt-actions { 
+  display: flex; 
+  align-items: center; 
+  justify-content: space-between; 
+}
+
+.paid-button { 
+  color: #38a169; 
+  font-size: 1.3rem; 
+}
+
+.account-summary.simple {
+  padding-bottom: 10px;
+}
+

@@ -76,11 +76,24 @@ const ClientesPage = () => {
   };
 
   const handleDelete = (id) => {
-    Swal.fire({ /* ... */ }).then((result) => {
+    // Se restaura la llamada a Swal.fire con la configuración correcta
+    Swal.fire({
+      title: '¿Estás seguro?',
+      text: "Se eliminará el cliente de forma permanente.",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      confirmButtonText: 'Sí, ¡eliminar!',
+      cancelButtonText: 'Cancelar'
+    }).then((result) => {
+      // Si el usuario confirma, se procede a la eliminación
       if (result.isConfirmed) {
-        // --- 3. Pasa el tenantId ---
         const promise = deleteClient(tenantId, id);
-        toast.promise(promise, { /* ... */ });
+        toast.promise(promise, {
+          loading: 'Eliminando cliente...',
+          success: <b>¡Cliente eliminado!</b>,
+          error: <b>No se pudo eliminar.</b>,
+        });
       }
     });
   };

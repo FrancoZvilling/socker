@@ -1,7 +1,6 @@
 // src/context/ConnectionContext.jsx
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { doc, onSnapshot } from 'firebase/firestore';
-import { db } from '../config/firebase';
+// Ya no se necesitan importaciones de 'firebase/firestore' en este archivo.
 
 const ConnectionContext = createContext();
 
@@ -10,35 +9,27 @@ export const useConnection = () => {
 };
 
 export const ConnectionProvider = ({ children }) => {
-  const [isOnline, setIsOnline] = useState(true); // Asumimos online al principio
+  const [isOnline, setIsOnline] = useState(true);
 
   useEffect(() => {
-    // Firebase tiene una forma especial de detectar el estado de la conexión.
-    // Escuchamos cambios en un documento especial '.info/connected'.
-    const connectedRef = doc(db, '.info/connected');
-    
-    const unsubscribe = onSnapshot(connectedRef, (snap) => {
-      // snap.data().value será 'true' si estamos conectados, 'false' si no.
-      // Sin embargo, este método está más asociado a Realtime Database.
-      // Un método más simple y universal es usar los eventos del navegador.
-    });
+    // Se ha eliminado la lógica de 'onSnapshot' a '.info/connected' que causaba el error de permisos.
 
-    // --- MÉTODO MÁS SIMPLE Y EFECTIVO ---
+    // Se mantiene únicamente el método del navegador, que es simple y efectivo.
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
 
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
     
-    // Verificamos el estado inicial
+    // Se establece el estado inicial basado en el navegador.
     setIsOnline(navigator.onLine);
 
     return () => {
-      // unsubscribe();
+      // Se limpia solo los listeners del navegador.
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, []);
+  }, []); // El array de dependencias vacío es correcto.
 
   const value = {
     isOnline,

@@ -99,6 +99,8 @@ const CajaPage = () => {
     promise.then(() => setIsClosingModal(false));
   };
 
+  
+
   return (
     <div className="cash-drawer-page">
       <header className="page-header">

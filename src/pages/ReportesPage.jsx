@@ -1,11 +1,12 @@
 // src/pages/ReportesPage.jsx
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useBusiness } from '../context/BusinessContext';
 import { getTodaySalesRealtime, getSalesByDateRange } from '../services/saleService';
 import { processReturn } from '../services/returnService';
-import { generateReceiptPDF } from '../utils/receiptGenerator';
+// Se añade la nueva función para generar remitos
+import { generateReceiptPDF, generateDeliveryNotePDF } from '../utils/receiptGenerator'; 
 import ReactPaginate from 'react-paginate';
 import SalesTable from '../components/reportes/SalesTable';
 import SaleDetailsModal from '../components/reportes/SaleDetailsModal';
@@ -33,24 +34,18 @@ const ReportesPage = () => {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
-  // Efecto para la carga inicial y en tiempo real de las ventas del día
   useEffect(() => {
     if (!tenantId) return;
-
     setIsLoading(true);
-    // Esta suscripción se mantiene activa para las ventas del día
     const unsubscribe = getTodaySalesRealtime(tenantId, (fetchedSales) => {
-      // Solo actualiza si no estamos en medio de una búsqueda filtrada
       if (!startDate && !endDate) {
         setDisplayedSales(fetchedSales);
       }
       setIsLoading(false);
     });
-    
     return () => unsubscribe();
-  }, [tenantId, startDate, endDate]); // Depende de las fechas para saber si debe actuar
+  }, [tenantId, startDate, endDate]);
 
-  // Función para buscar por rango de fechas
   const handleApplyFilter = async () => {
     if (!startDate || !endDate) {
       toast.error("Por favor, seleccione ambas fechas."); return;
@@ -58,7 +53,6 @@ const ReportesPage = () => {
     if (new Date(endDate) < new Date(startDate)) {
       toast.error('La fecha "Hasta" no puede ser anterior a la fecha "Desde".'); return;
     }
-
     setIsSearching(true);
     try {
       const fetchedSales = await getSalesByDateRange(tenantId, startDate, endDate);
@@ -72,15 +66,11 @@ const ReportesPage = () => {
     }
   };
 
-  // Función para limpiar el filtro y volver a las ventas del día
   const handleClearFilter = () => {
     setStartDate('');
     setEndDate('');
-    // Al limpiar las fechas, el useEffect se encargará de volver a suscribirse
-    // a las ventas del día, no necesitamos lógica extra aquí.
   };
 
-  // Lógica de paginación del lado del cliente
   const pageCount = Math.ceil(displayedSales.length / pageSize);
   const offset = currentPage * pageSize;
   const currentSales = displayedSales.slice(offset, offset + pageSize);
@@ -103,6 +93,15 @@ const ReportesPage = () => {
       error: <b>Error al registrar la devolución.</b>
     });
     promise.then(() => setIsReturnModalOpen(false));
+  };
+
+  // --- NUEVA FUNCIÓN PARA IMPRIMIR REMITOS ---
+  const handlePrintDeliveryNote = (sale) => {
+    if (!businessData) {
+      toast.error("Datos del negocio no cargados. Intente de nuevo.");
+      return;
+    }
+    generateDeliveryNotePDF(businessData, sale);
   };
 
   return (
@@ -128,7 +127,13 @@ const ReportesPage = () => {
         <p>{isSearching ? 'Buscando en el historial...' : 'Cargando ventas de hoy...'}</p>
       ) : (
         <>
-          <SalesTable sales={currentSales} onShowDetails={handleShowDetails} onPrint={handlePrintReceipt} onReturn={handleOpenReturnModal} />
+          <SalesTable
+            sales={currentSales}
+            onShowDetails={handleShowDetails}
+            onPrint={handlePrintReceipt}
+            onReturn={handleOpenReturnModal}
+            onPrintDeliveryNote={handlePrintDeliveryNote} // Se pasa la nueva función a la tabla
+          />
           {pageCount > 1 && (
             <div className="pagination-container">
               <ReactPaginate

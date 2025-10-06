@@ -1,12 +1,13 @@
 // src/components/reportes/SalesTable.jsx
 
 import React from 'react';
-// Se cambia el ícono de devolución por uno más representativo como FiRotateCcw
-import { FiEye, FiPrinter, FiRotateCcw } from 'react-icons/fi';
+// Se añade el ícono FiTruck para el remito
+import { FiEye, FiPrinter, FiRotateCcw, FiTruck } from 'react-icons/fi'; 
 import { formatCurrency } from '../../utils/formatters';
 import './SalesTable.css';
 
-const SalesTable = ({ sales, onShowDetails, onPrint, onReturn }) => {
+// Se añade la nueva prop 'onPrintDeliveryNote'
+const SalesTable = ({ sales, onShowDetails, onPrint, onReturn, onPrintDeliveryNote }) => {
   if (sales.length === 0) {
     return <p>Aún no se han registrado ventas.</p>;
   }
@@ -48,14 +49,21 @@ const SalesTable = ({ sales, onShowDetails, onPrint, onReturn }) => {
                   <FiPrinter />
                 </button>
                 
-                {/* --- Lógica Condicional Implementada --- */}
-                {/* Si la venta tiene el estado 'completed', muestra una etiqueta. */}
+                {/* --- SE AÑADE EL NUEVO BOTÓN PARA IMPRIMIR REMITO --- */}
+                <button 
+                  className="icon-button" 
+                  title="Imprimir Remito" 
+                  onClick={() => onPrintDeliveryNote(sale)}
+                >
+                  <FiTruck />
+                </button>
+                {/* -------------------------------------------------- */}
+
                 {sale.returnStatus === 'completed' ? (
                   <span className="status-returned" title="Esta venta ya tiene una devolución registrada">
                     Devuelto
                   </span>
                 ) : (
-                  // Si no, muestra el botón para iniciar la devolución.
                   <button 
                     className="icon-button" 
                     title="Registrar Devolución" 
@@ -64,7 +72,6 @@ const SalesTable = ({ sales, onShowDetails, onPrint, onReturn }) => {
                     <FiRotateCcw />
                   </button>
                 )}
-                {/* ------------------------------------ */}
               </td>
             </tr>
           ))}

@@ -13,11 +13,13 @@ const CartItem = ({ item, onUpdateQuantity, onRemoveItem }) => {
       </div>
       <div className="item-actions">
         <div className="quantity-control">
-          <button onClick={() => onUpdateQuantity(item.id, item.quantity - 1)}><FiMinus /></button>
+          {/* Se pasa 'item.key' en lugar de 'item.id' */}
+          <button onClick={() => onUpdateQuantity(item.key, item.quantity - 1)}><FiMinus /></button>
           <span>{item.quantity}</span>
-          <button onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}><FiPlus /></button>
+          <button onClick={() => onUpdateQuantity(item.key, item.quantity + 1)}><FiPlus /></button>
         </div>
-        <button className="remove-btn" onClick={() => onRemoveItem(item.id)}><FiX /></button>
+        {/* Se pasa 'item.key' en lugar de 'item.id' */}
+        <button className="remove-btn" onClick={() => onRemoveItem(item.key)}><FiX /></button>
       </div>
     </div>
   );

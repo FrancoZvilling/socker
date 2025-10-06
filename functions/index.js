@@ -335,7 +335,72 @@ exports.importProductsBulk = onCall({ region: region, timeoutSeconds: 300 }, asy
   }
 });
 
+exports.markSaleAsPaid = onCall({ region: region }, async (request) => {
+  // 1. Seguridad: Verificamos que sea un admin del tenant
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Usuario no autenticado.");
+  }
+  const { tenantId, saleId } = request.data;
+  const callerUserRef = db.collection("users").doc(request.auth.uid);
+  const callerUserSnap = await callerUserRef.get();
+  if (!callerUserSnap.exists || callerUserSnap.data().role !== "admin" || callerUserSnap.data().tenantId !== tenantId) {
+    throw new HttpsError("permission-denied", "Permiso denegado.");
+  }
+  
+  if (!saleId) {
+    throw new HttpsError("invalid-argument", "Se requiere el ID de la venta.");
+  }
 
+  // 2. Definimos las referencias a los documentos que vamos a modificar
+  const saleRef = db.collection(`tenants/${tenantId}/sales`).doc(saleId);
+  const paymentsCollectionRef = db.collection(`tenants/${tenantId}/payments`);
+
+  try {
+    // 3. Usamos una transacción para asegurar la atomicidad
+    await db.runTransaction(async (transaction) => {
+      const saleDoc = await transaction.get(saleRef);
+      if (!saleDoc.exists) {
+        throw new HttpsError("not-found", "La venta no existe.");
+      }
+      const saleData = saleDoc.data();
+
+      // Verificación: No procesar si la venta ya está pagada
+      if (saleData.paymentStatus !== 'pending') {
+        throw new HttpsError("failed-precondition", "Esta venta no está pendiente de pago.");
+      }
+      
+      const clientRef = db.collection(`tenants/${tenantId}/clients`).doc(saleData.client.id);
+
+      // --- OPERACIONES DENTRO DE LA TRANSACCIÓN ---
+      
+      // a. Actualizamos el estado de la venta
+      transaction.update(saleRef, { paymentStatus: 'paid' });
+      
+      // b. Actualizamos el saldo del cliente (disminuimos la deuda)
+      transaction.update(clientRef, { balance: admin.firestore.FieldValue.increment(-saleData.total) });
+      
+      // c. Creamos un registro del pago
+      const newPaymentRef = paymentsCollectionRef.doc();
+      transaction.set(newPaymentRef, {
+        clientId: saleData.client.id,
+        clientName: saleData.client.name,
+        amount: saleData.total,
+        type: 'Pago de Venta Específica',
+        relatedSaleId: saleId,
+        timestamp: admin.firestore.FieldValue.serverTimestamp(),
+      });
+    });
+
+    return { status: "success", message: "Venta marcada como pagada con éxito." };
+  } catch (error) {
+    console.error("Error en markSaleAsPaid:", error);
+    // Si el error ya es un HttpsError, lo relanzamos. Si no, lo envolvemos.
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "No se pudo completar la operación.");
+  }
+});
 
 
 

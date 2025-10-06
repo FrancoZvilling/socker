@@ -9,12 +9,13 @@ import AuthModal from '../auth/AuthModal';
 import { useBusiness } from '../../context/BusinessContext';
 import {
   FiHome, FiBox, FiShoppingCart, FiBarChart2,
-  FiTruck, FiUsers, FiLogIn, FiLogOut, FiGift, FiTrendingUp, FiArchive, FiSettings
+  FiTruck, FiUsers, FiLogIn, FiLogOut, FiGift, FiTrendingUp, FiArchive, FiSettings,FiFileText
 } from 'react-icons/fi';
 import './Sidebar.css';
 import AdminSwitch from '../common/AdminSwitch';
 import logo from '../../assets/logo.png';
-import ConnectionIndicator from '../common/ConnectionIndicator'; // Se importa el nuevo componente
+import ConnectionIndicator from '../common/ConnectionIndicator';
+import PresupuestosPage from '../../pages/PresupuestosPage';
 
 const Sidebar = () => {
   const { currentUser, isLoading } = useAuth(); 
@@ -70,6 +71,7 @@ const Sidebar = () => {
             </NavLink>
             <NavLink to="/inventario"><FiBox /> <span>Inventario</span></NavLink>
             <NavLink to="/promociones"><FiGift /> <span>Promociones</span></NavLink>
+            <NavLink to="/presupuestos"><FiFileText /> <span>Presupuestos</span></NavLink>
             <NavLink to="/ventas"><FiShoppingCart /> <span>Ventas</span></NavLink>
             <NavLink to="/reportes"><FiBarChart2 /> <span>Reportes</span></NavLink>
             <NavLink to="/proveedores"><FiTruck /> <span>Proveedores</span></NavLink>

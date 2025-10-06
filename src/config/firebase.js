@@ -14,7 +14,7 @@ export const firebaseConfig = {
 };
 
 // --- INICIALIZACIÓN CENTRALIZADA ---
-const app = initializeApp(firebaseConfig);
+export const app = initializeApp(firebaseConfig);
 
 // --- INICIALIZACIÓN DE SERVICIOS CON PERSISTENCIA ---
 // Se utiliza 'initializeFirestore' para configurar la caché offline desde el principio

@@ -17,6 +17,7 @@ import PromocionesPage from '../pages/PromocionesPage';
 import FinanzasPage from '../pages/FinanzasPage';
 import CajaPage from '../pages/CajaPage';
 import ConfiguracionPage from '../pages/ConfiguracionPage';
+import PresupuestosPage from '../pages/PresupuestosPage';
 
 // Componentes de Rutas Protegidas
 import SuperAdminRoute from './SuperAdminRoute';
@@ -85,6 +86,10 @@ const router = createBrowserRouter([
       { 
         path: 'configuracion', 
         element: <ConfiguracionPage /> 
+      },
+      {
+        path: 'presupuestos',
+        element: <PresupuestosPage />
       },
     ],
   },

@@ -1,5 +1,7 @@
+// src/pages/VentasPage.jsx
+
 import React, { useState, useEffect, useMemo } from 'react';
-import ReactPaginate from 'react-paginate'; // Se importa el componente de paginación
+import ReactPaginate from 'react-paginate';
 import { useAuth } from '../context/AuthContext';
 import { getProductsRealtime } from '../services/productService';
 import { getClientsRealtime } from '../services/clientService';
@@ -14,7 +16,7 @@ import Swal from 'sweetalert2';
 import { FiUserPlus } from 'react-icons/fi';
 import { formatCurrency } from '../utils/formatters';
 import './VentasPage.css';
-import './InventarioPage.css'; // Se importan los estilos de paginación
+import './InventarioPage.css';
 
 const VentasPage = () => {
   const { userData, currentUser } = useAuth();
@@ -30,12 +32,31 @@ const VentasPage = () => {
   const [posSearchTerm, setPosSearchTerm] = useState('');
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
 
-  // Nuevos estados para la paginación
   const [currentPage, setCurrentPage] = useState(0);
   const [pageSize, setPageSize] = useState(42);
 
   useEffect(() => {
     if (!tenantId) return;
+
+    // --- LÓGICA PARA CARGAR EL PRESUPUESTO AL INICIAR ---
+    // Se ejecuta solo una vez, al montar el componente.
+    const quoteToConvertJSON = sessionStorage.getItem('quoteToConvert');
+    if (quoteToConvertJSON) {
+      try {
+        const quoteData = JSON.parse(quoteToConvertJSON);
+        setCart(quoteData.items || []);
+        setSelectedClient(quoteData.client || null);
+        
+        // Se limpia el sessionStorage para que no se vuelva a cargar en recargas.
+        sessionStorage.removeItem('quoteToConvert');
+        
+        toast.success('Presupuesto cargado en el carrito.');
+      } catch (error) {
+        console.error("Error al cargar el presupuesto convertido:", error);
+        sessionStorage.removeItem('quoteToConvert'); // Limpia también si hay error.
+      }
+    }
+    // ----------------------------------------------------
 
     const unsubscribeProducts = getProductsRealtime(tenantId, (fetchedProducts) => {
       setProducts(fetchedProducts);
@@ -49,7 +70,7 @@ const VentasPage = () => {
       unsubscribeClients();
       unsubscribeCombos();
     };
-  }, [tenantId]);
+  }, [tenantId]); // El array de dependencias se mantiene solo con tenantId
   
   const catalogItems = useMemo(() => {
     const formattedProducts = products.map(p => ({ ...p, type: 'product', key: `product-${p.id}` }));
@@ -67,7 +88,6 @@ const VentasPage = () => {
     );
   }, [catalogItems, posSearchTerm]);
   
-  // Lógica para "cortar" el catálogo en páginas
   const pageCount = Math.ceil(filteredCatalog.length / pageSize);
   const offset = currentPage * pageSize;
   const currentCatalogItems = filteredCatalog.slice(offset, offset + pageSize);
@@ -78,7 +98,7 @@ const VentasPage = () => {
   
   const handlePageSizeChange = (e) => {
     setPageSize(Number(e.target.value));
-    setCurrentPage(0); // Volver a la primera página
+    setCurrentPage(0);
   };
 
   const handleAddToCart = (itemToAdd) => {

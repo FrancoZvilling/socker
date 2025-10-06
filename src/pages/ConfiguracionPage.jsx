@@ -3,6 +3,7 @@ import React from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useBusiness } from '../context/BusinessContext';
 import PinManager from '../components/configuracion/PinManager';
+import LogoUploader from '../components/configuracion/LogoUploader'; // Se importa el nuevo componente
 import { updateTenantData } from '../services/tenantService';
 import bcrypt from 'bcryptjs';
 import { toast } from 'react-hot-toast';
@@ -15,11 +16,9 @@ const ConfiguracionPage = () => {
 
   const handlePinUpdate = async (newPin) => {
     try {
-      // Generamos un 'salt' y luego hasheamos el PIN
       const salt = await bcrypt.genSalt(10);
       const pinHash = await bcrypt.hash(newPin, salt);
 
-      // Guardamos el PIN hasheado en Firestore
       await updateTenantData(tenantId, { adminPinHash: pinHash });
       toast.success('¡PIN de Administrador actualizado con éxito!');
     } catch (error) {
@@ -35,11 +34,19 @@ const ConfiguracionPage = () => {
       </header>
       <div className="settings-content">
         {tenantId && (
-          <PinManager 
-            tenantId={tenantId}
-            currentPinHash={businessData?.adminPinHash}
-            onPinUpdate={handlePinUpdate}
-          />
+          // Se usa un Fragmento <> para agrupar los dos componentes
+          <>
+            <PinManager 
+              tenantId={tenantId}
+              currentPinHash={businessData?.adminPinHash}
+              onPinUpdate={handlePinUpdate}
+            />
+            
+            {/* Se añade el nuevo componente para subir el logo */}
+            <LogoUploader 
+              currentLogoUrl={businessData?.businessLogoUrl} 
+            />
+          </>
         )}
       </div>
     </div>
