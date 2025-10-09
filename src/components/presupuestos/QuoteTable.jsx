@@ -2,8 +2,9 @@
 import React from 'react';
 import { FiEye, FiPrinter, FiArrowRightCircle, FiEdit, FiTrash2 } from 'react-icons/fi';
 import { formatCurrency } from '../../utils/formatters';
-import '../../components/inventario/ProductTable.css'; // Reutilizamos estilos
+import '../../components/inventario/ProductTable.css';
 
+// No hay cambios en los props, ya que la página principal seguirá pasando 'onPrint'
 const QuoteTable = ({ quotes, onView, onPrint, onConvertToSale, onEdit, onDelete }) => {
   if (quotes.length === 0) {
     return <p>No se encontraron presupuestos para el período seleccionado.</p>;
@@ -12,8 +13,8 @@ const QuoteTable = ({ quotes, onView, onPrint, onConvertToSale, onEdit, onDelete
   const getStatusClass = (status) => {
     switch (status) {
       case 'sent': return 'status-pending';
-      case 'accepted': return 'status-paid'; // Reutilizamos el estilo verde
-      case 'expired': return 'status-returned'; // Reutilizamos el estilo gris
+      case 'accepted': return 'status-paid';
+      case 'expired': return 'status-returned';
       default: return '';
     }
   };
@@ -44,11 +45,12 @@ const QuoteTable = ({ quotes, onView, onPrint, onConvertToSale, onEdit, onDelete
                 </span>
               </td>
               <td className="actions-cell">
-                <button onClick={() => onView(quote)} title="Ver Detalles"><FiEye /></button>
-                <button onClick={() => onPrint(quote)} title="Imprimir PDF"><FiPrinter /></button>
-                <button onClick={() => onConvertToSale(quote)} title="Convertir en Venta"><FiArrowRightCircle /></button>
-                <button onClick={() => onEdit(quote)} title="Editar"><FiEdit /></button>
-                <button className="danger" onClick={() => onDelete(quote.id)} title="Eliminar"><FiTrash2 /></button>
+                <button className="icon-button" onClick={() => onView(quote)} title="Ver Detalles"><FiEye /></button>
+                {/* El botón de imprimir ahora es un botón simple que llama a la función 'onPrint' */}
+                <button className="icon-button" onClick={() => onPrint(quote)} title="Imprimir PDF"><FiPrinter /></button>
+                <button className="icon-button" onClick={() => onConvertToSale(quote)} title="Convertir en Venta"><FiArrowRightCircle /></button>
+                <button className="icon-button" onClick={() => onEdit(quote)} title="Editar"><FiEdit /></button>
+                <button className="icon-button danger" onClick={() => onDelete(quote.id)} title="Eliminar"><FiTrash2 /></button>
               </td>
             </tr>
           ))}

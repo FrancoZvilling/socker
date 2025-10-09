@@ -2,12 +2,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useBusiness } from '../context/BusinessContext';
-import { useNavigate } from 'react-router-dom'; // Se añade useNavigate para la redirección
+import { useNavigate } from 'react-router-dom';
 import { getTodayQuotesRealtime, getQuotesByDateRange, addQuote, updateQuote, deleteQuote } from '../services/quoteService';
 import { getProductsRealtime } from '../services/productService';
 import { getCombosRealtime } from '../services/comboService';
 import { getClientsRealtime } from '../services/clientService';
-import { generateQuotePDF } from '../utils/receiptGenerator';
 import ReactPaginate from 'react-paginate';
 import Button from '../components/common/Button';
 import Modal from '../components/common/Modal';
@@ -17,13 +16,14 @@ import Swal from 'sweetalert2';
 import QuoteTable from '../components/presupuestos/QuoteTable';
 import QuoteEditorModal from '../components/presupuestos/QuoteEditorModal';
 import QuoteDetailsModal from '../components/presupuestos/QuoteDetailsModal';
+import QuotePDFModal from '../components/presupuestos/QuotePDFModal'; // Se importa el nuevo modal para PDF
 import './ReportesPage.css';
 
 const PresupuestosPage = () => {
   const { userData } = useAuth();
   const { businessData } = useBusiness();
   const tenantId = userData?.tenantId;
-  const navigate = useNavigate(); // Se inicializa el hook de navegación
+  const navigate = useNavigate();
   
   const [quotes, setQuotes] = useState([]);
   const [products, setProducts] = useState([]);
@@ -42,6 +42,10 @@ const PresupuestosPage = () => {
   
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [selectedQuote, setSelectedQuote] = useState(null);
+
+  // Nuevos estados para el modal de generación de PDF
+  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
+  const [quoteForPdf, setQuoteForPdf] = useState(null);
 
   useEffect(() => {
     if (!tenantId) return;
@@ -121,15 +125,12 @@ const PresupuestosPage = () => {
     });
   };
   
+  // Se modifica handlePrintQuote para que abra el nuevo modal
   const handlePrintQuote = (quote) => {
-    if (!businessData) {
-      toast.error("Datos del negocio no están cargados. Intente de nuevo.");
-      return;
-    }
-    generateQuotePDF(businessData, quote);
+    setQuoteForPdf(quote);
+    setIsPdfModalOpen(true);
   };
 
-  // --- FUNCIÓN 'handleConvertToSale' IMPLEMENTADA ---
   const handleConvertToSale = (quote) => {
     const cartToConvert = {
       items: quote.items,
@@ -213,6 +214,16 @@ const PresupuestosPage = () => {
         <QuoteDetailsModal 
           quote={selectedQuote} 
           onClose={handleCloseDetailsModal} 
+        />
+      )}
+
+      {/* Se renderiza el nuevo modal de generación de PDF */}
+      {isPdfModalOpen && (
+        <QuotePDFModal
+          isOpen={isPdfModalOpen}
+          onClose={() => setIsPdfModalOpen(false)}
+          businessData={businessData}
+          quoteData={quoteForPdf}
         />
       )}
     </div>

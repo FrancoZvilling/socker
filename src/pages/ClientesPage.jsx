@@ -14,7 +14,7 @@ import Swal from 'sweetalert2';
 import '../styles/common.css';
 
 const ClientesPage = () => {
-  const { userData } = useAuth(); // <-- CAMBIO
+  const { userData } = useAuth();
   const tenantId = userData?.tenantId;
 
   const [clients, setClients] = useState([]);
@@ -28,13 +28,12 @@ const ClientesPage = () => {
   useEffect(() => {
     if (!tenantId) return;
 
-    // --- 3. Pasa el tenantId al servicio ---
     const unsubscribe = getClientsRealtime(tenantId, (fetchedClients) => {
       setClients(fetchedClients);
       setIsLoading(false);
     });
     return () => unsubscribe();
-  }, [tenantId]); // <-- 4. El efecto ahora depende de tenantId
+  }, [tenantId]);
 
   const filteredClients = useMemo(() => {
     const term = searchTerm.toLowerCase();
@@ -64,19 +63,24 @@ const ClientesPage = () => {
   const handleFormSubmit = (clientData) => {
     let promise;
     if (clientToEdit) {
-      // --- 3. Pasa el tenantId ---
       promise = updateClient(tenantId, clientToEdit.id, clientData);
-      toast.promise(promise, { /* ... */ });
+      toast.promise(promise, {
+        loading: 'Actualizando cliente...',
+        success: <b>¡Cliente actualizado!</b>,
+        error: <b>No se pudo actualizar.</b>,
+      });
     } else {
-      // --- 3. Pasa el tenantId ---
       promise = addClient(tenantId, clientData);
-      toast.promise(promise, { /* ... */ });
+      toast.promise(promise, {
+        loading: 'Guardando cliente...',
+        success: <b>¡Cliente guardado!</b>,
+        error: <b>No se pudo guardar.</b>,
+      });
     }
     promise.then(() => handleCloseModal());
   };
 
   const handleDelete = (id) => {
-    // Se restaura la llamada a Swal.fire con la configuración correcta
     Swal.fire({
       title: '¿Estás seguro?',
       text: "Se eliminará el cliente de forma permanente.",
@@ -86,7 +90,6 @@ const ClientesPage = () => {
       confirmButtonText: 'Sí, ¡eliminar!',
       cancelButtonText: 'Cancelar'
     }).then((result) => {
-      // Si el usuario confirma, se procede a la eliminación
       if (result.isConfirmed) {
         const promise = deleteClient(tenantId, id);
         toast.promise(promise, {

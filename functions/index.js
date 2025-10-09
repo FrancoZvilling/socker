@@ -68,7 +68,7 @@ exports.onTenantApprove = onDocumentUpdated({
         status: 'active'
       });
       await batch.commit();
-      const appUrl = 'https://socker-kohl.vercel.app/finalizar-registro';
+      const appUrl = 'https://stocker.com.ar/finalizar-registro';
       const actionLink = await auth.generatePasswordResetLink(tenantData.contactEmail, { url: appUrl });
       sgMail.setApiKey(process.env.SENDGRID_API_KEY);
       const msg = {

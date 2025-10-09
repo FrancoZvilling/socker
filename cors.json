@@ -1,0 +1,12 @@
+[
+  {
+    "origin": [
+      "http://localhost:5173",
+      "https://stocker.com.ar",
+      "https://www.stocker.com.ar",
+      "https://stock-319c5.web.app"
+    ],
+    "method": ["GET"],
+    "maxAgeSeconds": 3600
+  }
+]

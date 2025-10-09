@@ -5,14 +5,14 @@ import { useAuth } from '../context/AuthContext';
 import { useBusiness } from '../context/BusinessContext';
 import { getTodaySalesRealtime, getSalesByDateRange } from '../services/saleService';
 import { processReturn } from '../services/returnService';
-// Se añade la nueva función para generar remitos
-import { generateReceiptPDF, generateDeliveryNotePDF } from '../utils/receiptGenerator'; 
 import ReactPaginate from 'react-paginate';
 import SalesTable from '../components/reportes/SalesTable';
 import SaleDetailsModal from '../components/reportes/SaleDetailsModal';
 import ReturnModal from '../components/devoluciones/ReturnModal';
 import Button from '../components/common/Button';
 import { toast } from 'react-hot-toast';
+import TicketPDFModal from '../components/pdf/TicketPDFModal'; // Se importa el nuevo modal de Ticket
+import RemitoPDFModal from '../components/pdf/RemitoPDFModal'; // Se importa el nuevo modal de Remito
 import './ReportesPage.css';
 import '../pages/InventarioPage.css';
 
@@ -28,6 +28,11 @@ const ReportesPage = () => {
   const [selectedSale, setSelectedSale] = useState(null);
   const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
   const [saleToReturn, setSaleToReturn] = useState(null);
+  
+  // Nuevos estados para los modales de PDF
+  const [isTicketModalOpen, setIsTicketModalOpen] = useState(false);
+  const [isRemitoModalOpen, setIsRemitoModalOpen] = useState(false);
+  const [saleForPdf, setSaleForPdf] = useState(null);
 
   const [currentPage, setCurrentPage] = useState(0);
   const [pageSize, setPageSize] = useState(10);
@@ -69,6 +74,7 @@ const ReportesPage = () => {
   const handleClearFilter = () => {
     setStartDate('');
     setEndDate('');
+    // Al limpiar, el useEffect se re-ejecutará y cargará las ventas de hoy
   };
 
   const pageCount = Math.ceil(displayedSales.length / pageSize);
@@ -82,7 +88,17 @@ const ReportesPage = () => {
   
   const handleShowDetails = (sale) => { setSelectedSale(sale); setIsDetailsModalOpen(true); };
   const handleCloseDetailsModal = () => { setIsDetailsModalOpen(false); setSelectedSale(null); };
-  const handlePrintReceipt = (sale) => { if (businessData) generateReceiptPDF(businessData, sale); };
+  
+  // Los handlers de impresión ahora abren los modales
+  const handlePrintTicket = (sale) => {
+    setSaleForPdf(sale);
+    setIsTicketModalOpen(true);
+  };
+  const handlePrintDeliveryNote = (sale) => {
+    setSaleForPdf(sale);
+    setIsRemitoModalOpen(true);
+  };
+  
   const handleOpenReturnModal = (sale) => { setSaleToReturn(sale); setIsReturnModalOpen(true); };
   const handleProcessReturn = (returnData) => {
     const finalReturnData = { ...returnData, processedBy: { uid: currentUser.uid, email: currentUser.email } };
@@ -93,15 +109,6 @@ const ReportesPage = () => {
       error: <b>Error al registrar la devolución.</b>
     });
     promise.then(() => setIsReturnModalOpen(false));
-  };
-
-  // --- NUEVA FUNCIÓN PARA IMPRIMIR REMITOS ---
-  const handlePrintDeliveryNote = (sale) => {
-    if (!businessData) {
-      toast.error("Datos del negocio no cargados. Intente de nuevo.");
-      return;
-    }
-    generateDeliveryNotePDF(businessData, sale);
   };
 
   return (
@@ -119,7 +126,7 @@ const ReportesPage = () => {
           </Button>
         </div>
         <button className="clear-filter-btn" onClick={handleClearFilter} disabled={!startDate && !endDate}>
-          Mostrar Todo
+          Mostrar Hoy
         </button>
       </div>
 
@@ -129,10 +136,11 @@ const ReportesPage = () => {
         <>
           <SalesTable
             sales={currentSales}
+            businessData={businessData}
             onShowDetails={handleShowDetails}
-            onPrint={handlePrintReceipt}
+            onPrintTicket={handlePrintTicket}
             onReturn={handleOpenReturnModal}
-            onPrintDeliveryNote={handlePrintDeliveryNote} // Se pasa la nueva función a la tabla
+            onPrintDeliveryNote={handlePrintDeliveryNote}
           />
           {pageCount > 1 && (
             <div className="pagination-container">
@@ -157,6 +165,24 @@ const ReportesPage = () => {
 
       {isDetailsModalOpen && ( <SaleDetailsModal sale={selectedSale} onClose={handleCloseDetailsModal} /> )}
       {isReturnModalOpen && ( <ReturnModal isOpen={isReturnModalOpen} onClose={() => setIsReturnModalOpen(false)} saleData={saleToReturn} onSubmitReturn={handleProcessReturn} /> )}
+
+      {/* Se renderizan los nuevos modales para los PDF */}
+      {isTicketModalOpen && (
+        <TicketPDFModal
+          isOpen={isTicketModalOpen}
+          onClose={() => setIsTicketModalOpen(false)}
+          businessData={businessData}
+          saleData={saleForPdf}
+        />
+      )}
+      {isRemitoModalOpen && (
+        <RemitoPDFModal
+          isOpen={isRemitoModalOpen}
+          onClose={() => setIsRemitoModalOpen(false)}
+          businessData={businessData}
+          saleData={saleForPdf}
+        />
+      )}
     </div>
   );
 };
