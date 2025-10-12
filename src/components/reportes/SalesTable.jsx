@@ -29,7 +29,7 @@ const SalesTable = ({ sales, onShowDetails, onPrintTicket, onPrintDeliveryNote, 
           <tr>
             <th>Fecha y Hora</th>
             <th>Cliente</th>
-            <th>Método de Pago</th> {/* Se añade la nueva cabecera */}
+            <th>Método de Pago</th>
             <th>Total Venta</th>
             <th>Costo Total</th>
             <th>Ganancia</th>

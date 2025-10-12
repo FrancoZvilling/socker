@@ -3,43 +3,39 @@ import React from 'react';
 import { PDFDownloadLink } from '@react-pdf/renderer';
 import { FiLoader } from 'react-icons/fi';
 
-// Este componente ahora es más flexible.
-// - Si le pasas 'children', renderiza un botón con el texto/íconos que le pases.
-// - Si no, renderiza el 'icon-button' por defecto.
-const PDFDownloadButton = ({ document, fileName, icon, title, className, children }) => {
-
-  // Si se pasan 'children', se renderiza un enlace estilizado.
-  if (children) {
-    return (
-      // Le pasamos el 'className' al enlace para que se vea como un botón
-      <PDFDownloadLink document={document} fileName={fileName} className={className}>
-        {({ loading }) => (loading ? (
-          // Mostramos un estado de carga genérico
-          <>
-            <FiLoader className="spinner-icon" /> Generando PDF...
-          </>
-        ) : (
-          // Mostramos el contenido que nos pasaron
-          children
-        ))}
-      </PDFDownloadLink>
-    );
-  }
-
-  // Comportamiento por defecto: renderizar solo el botón de ícono
+const PDFDownloadButton = ({ document, fileName, icon, title, children, className }) => {
   return (
-    <PDFDownloadLink document={document} fileName={fileName}>
-      {({ blob, url, loading, error }) => 
-        loading ? (
-          <button className="icon-button" title="Generando PDF..." disabled>
-            <FiLoader className="spinner-icon" />
-          </button>
-        ) : (
+    <PDFDownloadLink document={document} fileName={fileName} className={className}>
+      {({ loading, error }) => {
+        // Si hay un error durante la generación, lo mostramos en la consola
+        if (error) {
+          console.error("Error al renderizar el PDF:", error);
+        }
+        
+        // Mientras carga, mostramos el estado de carga
+        if (loading) {
+          if (icon) { // Para botones de icono
+            return (
+              <button className="icon-button" title="Generando PDF..." disabled>
+                <FiLoader className="spinner-icon" />
+              </button>
+            );
+          }
+          return 'Generando...'; // Para botones de texto
+        }
+
+        // Si no está cargando y no hay error, mostramos el contenido
+        if (children) {
+          return children; // Para el enlace oculto o botones de texto
+        }
+        
+        // Comportamiento por defecto para los botones de icono en tablas
+        return (
           <button className="icon-button" title={title}>
             {icon}
           </button>
-        )
-      }
+        );
+      }}
     </PDFDownloadLink>
   );
 };
