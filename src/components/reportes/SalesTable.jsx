@@ -3,10 +3,20 @@
 import React from 'react';
 import { FiEye, FiPrinter, FiRotateCcw, FiTruck } from 'react-icons/fi';
 import { formatCurrency } from '../../utils/formatters';
-// Ya no se necesitan las importaciones de PDFDownloadButton ni de las plantillas PDF aquí
 import './SalesTable.css';
 
-// La firma del componente ahora recibe 'onPrintTicket' y 'onPrintDeliveryNote'
+// Función de ayuda para traducir los métodos de pago a un formato legible
+const formatPaymentMethod = (method) => {
+  switch (method) {
+    case 'cash': return 'Efectivo';
+    case 'card': return 'Tarjeta';
+    case 'transfer': return 'Transferencia';
+    case 'cheque': return 'Cheque';
+    case 'credit': return 'A Crédito';
+    default: return method || 'N/A'; // Muestra el método si no es conocido, o N/A
+  }
+};
+
 const SalesTable = ({ sales, onShowDetails, onPrintTicket, onPrintDeliveryNote, onReturn }) => {
   if (sales.length === 0) {
     return <p>Aún no se han registrado ventas para el período seleccionado.</p>;
@@ -19,6 +29,7 @@ const SalesTable = ({ sales, onShowDetails, onPrintTicket, onPrintDeliveryNote, 
           <tr>
             <th>Fecha y Hora</th>
             <th>Cliente</th>
+            <th>Método de Pago</th> {/* Se añade la nueva cabecera */}
             <th>Total Venta</th>
             <th>Costo Total</th>
             <th>Ganancia</th>
@@ -32,6 +43,10 @@ const SalesTable = ({ sales, onShowDetails, onPrintTicket, onPrintDeliveryNote, 
                 {sale.createdAt ? sale.createdAt.toDate().toLocaleString() : 'Fecha no disponible'}
               </td>
               <td>{sale.client?.name || 'S/N'}</td>
+              
+              {/* Se añade la nueva celda con el método de pago formateado */}
+              <td>{formatPaymentMethod(sale.paymentMethod)}</td>
+
               <td>{formatCurrency(sale.total)}</td>
               <td>{formatCurrency(sale.totalCost || 0)}</td>
               <td className="profit-cell">{formatCurrency(sale.profit || 0)}</td>
@@ -43,9 +58,6 @@ const SalesTable = ({ sales, onShowDetails, onPrintTicket, onPrintDeliveryNote, 
                 >
                   <FiEye />
                 </button>
-
-                {/* --- BOTONES DE IMPRESIÓN MODIFICADOS --- */}
-                {/* Ahora son botones simples que llaman a los handlers de la página principal */}
                 <button
                   className="icon-button"
                   title="Imprimir Ticket"
@@ -53,7 +65,6 @@ const SalesTable = ({ sales, onShowDetails, onPrintTicket, onPrintDeliveryNote, 
                 >
                   <FiPrinter />
                 </button>
-
                 <button
                   className="icon-button"
                   title="Imprimir Remito"
@@ -61,8 +72,6 @@ const SalesTable = ({ sales, onShowDetails, onPrintTicket, onPrintDeliveryNote, 
                 >
                   <FiTruck />
                 </button>
-                {/* ------------------------------------------- */}
-
                 {sale.returnStatus === 'completed' ? (
                   <span className="status-returned" title="Esta venta ya tiene una devolución registrada">
                     Devuelto

@@ -49,3 +49,7 @@
   font-size: 2.5rem;
   margin-bottom: 5px;
 }
+
+.payment-methods-grid.four-items {
+  grid-template-columns: repeat(2, 1fr);
+}

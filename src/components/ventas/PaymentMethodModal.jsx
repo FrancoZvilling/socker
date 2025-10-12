@@ -1,7 +1,8 @@
 // src/components/ventas/PaymentMethodModal.jsx
 import React from 'react';
 import Modal from '../common/Modal';
-import { FiDollarSign, FiCreditCard, FiSmartphone } from 'react-icons/fi';
+// Se añade el nuevo ícono FiEdit para el método de pago 'Cheque'.
+import { FiDollarSign, FiCreditCard, FiSmartphone, FiEdit } from 'react-icons/fi';
 import './PaymentMethodModal.css';
 
 const PaymentMethodModal = ({ isOpen, onClose, onSelectMethod, totalAmount }) => {
@@ -9,6 +10,8 @@ const PaymentMethodModal = ({ isOpen, onClose, onSelectMethod, totalAmount }) =>
     { name: 'Efectivo', key: 'cash', icon: <FiDollarSign /> },
     { name: 'Tarjeta', key: 'card', icon: <FiCreditCard /> },
     { name: 'Transferencia / QR', key: 'transfer', icon: <FiSmartphone /> },
+    // Se añade el nuevo objeto para el método de pago 'Cheque'.
+    { name: 'Cheque', key: 'cheque', icon: <FiEdit /> },
   ];
 
   return (
@@ -18,7 +21,8 @@ const PaymentMethodModal = ({ isOpen, onClose, onSelectMethod, totalAmount }) =>
           <span>Total a Pagar:</span>
           <strong>{totalAmount}</strong>
         </div>
-        <div className="payment-methods-grid">
+        {/* Se añade la clase 'four-items' para ajustar el layout de la grilla a 2x2 */}
+        <div className="payment-methods-grid four-items">
           {paymentMethods.map(method => (
             <button
               key={method.key}
